@@ -1,0 +1,37 @@
+# 构建产物
+build/
+*/build/
+*.apk
+*.aab
+
+# Gradle 缓存
+.gradle/
+
+# 本机配置
+local.properties
+
+# Android Studio / IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+.cxx/
+.externalNativeBuild/
+
+# 签名材料永远不进仓库
+app/signing.properties
+*.jks
+*.keystore
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+
+# 编译产物
+*.class
+*.war
+*.ear
+*.log
+
+# 但 gradle wrapper 的 jar 必须入库（构建引导）
+!gradle/wrapper/gradle-wrapper.jar

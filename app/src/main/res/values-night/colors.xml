@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#A8B8FF</color>
+    <color name="primary_dark">#7F96F2</color>
+    <color name="accent">#5BD6C8</color>
+    <color name="primary_button_text">#12192A</color>
+    <color name="app_background_top">#111827</color>
+    <color name="app_background_bottom">#172338</color>
+    <color name="glass_top">#26344A</color>
+    <color name="glass_bottom">#1B293D</color>
+    <color name="glass_stroke">#4A5B76</color>
+    <color name="chip_surface">#30415A</color>
+    <color name="field_surface">#182538</color>
+    <color name="text_secondary">#B4C0D3</color>
+</resources>

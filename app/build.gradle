@@ -1,0 +1,72 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+// 可选本地签名材料（不入库）：app/signing.properties 指向 keystore。
+// 未配置时允许构建未签名 release 供 CI 编译验证；debug 包始终可安装。
+def signingProperties = new Properties()
+def signingPropertiesFile = rootProject.file('app/signing.properties')
+if (signingPropertiesFile.isFile()) {
+    signingPropertiesFile.withInputStream { signingProperties.load(it) }
+}
+def signingValue = { String environmentName, String propertyName ->
+    System.getenv(environmentName) ?: signingProperties.getProperty(propertyName)
+}
+def releaseStorePath = signingValue('ANDROID_KEYSTORE_PATH', 'storeFile')
+def releaseStoreFile = releaseStorePath ? rootProject.file(releaseStorePath) : null
+def releaseStorePassword = signingValue('ANDROID_KEYSTORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = signingValue('ANDROID_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = signingValue('ANDROID_KEY_PASSWORD', 'keyPassword')
+def releaseSigningReady = releaseStoreFile != null && releaseStoreFile.isFile()
+        && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
+android {
+    namespace 'com.yz8023.adguardtester'
+    compileSdk 36
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    defaultConfig {
+        applicationId 'com.yz8023.adguardtester'
+        minSdk 29
+        targetSdk 34
+        versionCode 3
+        versionName "1.2.0"
+        resourceConfigurations += ['zh', 'en']
+
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    signingConfigs {
+        if (releaseSigningReady) {
+            release {
+                storeFile releaseStoreFile
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (releaseSigningReady) signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation libs.androidx.core
+    implementation libs.androidx.appcompat
+    implementation libs.recyclerview
+    implementation libs.okhttp
+
+    testImplementation libs.junit
+}

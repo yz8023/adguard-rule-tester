@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AdGuard规则测试器</string>
+
+    <string name="section_sources">1 · 测试站点列表</string>
+    <string name="source_update_note">版本 %1$s · 10 路并发 · 未拦截结果置顶 · 点击结果复制链接（新增测试源在下方）</string>
+    <string name="src1_label">paileactivist/toolz（广告/分析/跟踪/OEM）</string>
+    <string name="src2_label">mobileproxy.space（广告/分析/跟踪等 12 类）</string>
+    <string name="src3_label">Adblock Turtlecute（广告/分析/社交/OEM，开源）</string>
+    <string name="src4_label">Super Adblock Test（约 470 个多类主机）</string>
+    <string name="src5_label">GetBlockify（80+ 网络主机）</string>
+    <string name="src_custom_label">自定义测试页面</string>
+    <string name="src_custom_hint">https://…（任意含测试域名列表的页面）</string>
+    <string name="copy_link_short">复制链接</string>
+    <string name="source_link_copied">测试站点链接已复制</string>
+    <string name="target_link_copied">检测目标链接已复制</string>
+    <string name="copy_target_link_description">复制测试链接：%1$s</string>
+    <string name="btn_parse">解析测试列表</string>
+
+    <string name="section_test">2 · 拦截测试</string>
+    <string name="cb_doh">DoH 参照验证（区分拦截/失效；关闭可加速，但会有更多“未知”）</string>
+    <string name="cb_oem">包含 OEM 测试（小米/华为/三星/苹果等）</string>
+    <string name="btn_start">开始测试</string>
+    <string name="btn_stop">停止</string>
+
+    <string name="section_results">3 · 测试结果</string>
+
+    <string name="section_rules">4 · AdGuard 规则导出</string>
+    <string name="cb_important">附加 $important（优先匹配）</string>
+    <string name="cb_unknown">把“无法验证”的域名也写入规则</string>
+    <string name="cb_group">按分类输出注释分组</string>
+    <string name="btn_generate">生成规则</string>
+    <string name="btn_copy">复制</string>
+    <string name="btn_share">分享</string>
+    <string name="btn_save">保存文件</string>
+
+    <string name="status_idle">就绪：先解析测试列表，再开始测试。</string>
+    <string name="status_parsing">正在抓取并解析测试站点…</string>
+    <string name="status_parsed">解析完成，可以开始测试。</string>
+    <string name="status_no_targets">未获得测试目标；查看来源提示，安全验证页请复制链接后用浏览器手动测试。</string>
+    <string name="status_testing">正在探测各域名是否被拦截…</string>
+    <string name="status_stopping">正在停止…</string>
+    <string name="status_tested">测试完成，已自动生成规则。</string>
+    <string name="status_rules_ready">规则已生成。</string>
+
+    <string name="parse_result">共 %1$d 个目标。\n%2$s</string>
+    <string name="progress_text">已测试 %1$d / %2$d</string>
+    <string name="summary_text">共 %1$d 项 · 未拦截 %2$d · 已拦截 %3$d · 失效 %4$d · 未知 %5$d</string>
+
+    <string name="copied">规则已复制到剪贴板</string>
+    <string name="saved">已保存</string>
+    <string name="share_title">分享规则</string>
+    <string name="err_no_source">请至少勾选一个测试站点</string>
+    <string name="err_no_targets">请先解析测试列表</string>
+    <string name="err_no_rules">还没有可导出的规则</string>
+    <string name="err_running">测试进行中</string>
+    <string name="err_no_storage">无法打开文件管理器</string>
+    <string name="err_save_failed">保存失败</string>
+
+    <string name="help_text">原理：逐个向测试站点列表中的广告/跟踪域名发起真实请求，能成功连上（任意 HTTP 响应）即为“未被拦截”，再按 AdGuard 语法生成 ||域名^ 补漏规则，导入 AdGuard 的「自定义过滤规则」即可生效。\n\n提示：测试请在 AdGuard（本地 VPN / DNS 模式）开启的状态下进行；“已拦截”结果依赖网络环境，DoH 验证可减少误判。</string>
+</resources>

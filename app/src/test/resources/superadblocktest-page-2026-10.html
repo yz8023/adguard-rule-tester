@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adblock Test – Check If Your Ad Blocker, VPN or DNS Blocks Ads</title>
+  <meta name="description" content="Run a free adblock test to see whether your browser, VPN, private DNS, router, or built-in protection blocks ads, trackers, analytics, and social domains.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#101315">
+  <link rel="canonical" href="https://superadblocktest.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Super Adblock Test">
+  <meta property="og:title" content="Adblock Test – Check If Your Ad Blocker, VPN or DNS Blocks Ads">
+  <meta property="og:description" content="Run a free adblock test to see whether your browser, VPN, private DNS, router, or built-in protection blocks ads, trackers, analytics, and social domains.">
+  <meta property="og:url" content="https://superadblocktest.com/">
+  <meta property="og:image" content="https://superadblocktest.com/assets/seo.png">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1260">
+  <meta property="og:image:alt" content="Super Adblock Test preview showing ad and tracker blocking score">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Adblock Test – Check If Your Ad Blocker, VPN or DNS Blocks Ads">
+  <meta name="twitter:description" content="Run a free adblock test to see whether your browser, VPN, private DNS, router, or built-in protection blocks ads, trackers, analytics, and social domains.">
+  <meta name="twitter:image" content="https://superadblocktest.com/assets/seo.png">
+  <meta name="twitter:image:alt" content="Super Adblock Test preview showing ad and tracker blocking score">
+  <link rel="icon" href="./assets/brandicon.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="./style.css?v=20260810-hero-guides-1">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Super Adblock Test",
+      "url": "https://superadblocktest.com/",
+      "description": "Run a free adblock test to see whether your browser, VPN, private DNS, router, or built-in protection blocks ads, trackers, analytics, and social domains.",
+      "inLanguage": "en",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Super Adblock Test",
+        "url": "https://superadblocktest.com/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://superadblocktest.com/assets/brandicon.png"
+        }
+      }
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Super Adblock Test",
+      "url": "https://superadblocktest.com/",
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Any",
+      "dateModified": "2026-08-12",
+      "inLanguage": "en",
+      "description": "Run a free adblock test to see whether your browser, VPN, private DNS, router, or built-in protection blocks ads, trackers, analytics, and social domains.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {"@type":"Question","name":"How do I test if my ad blocker is working?","acceptedAnswer":{"@type":"Answer","text":"Select Start test and wait for every probe to finish. Blocked results show that the tested request was stopped by your browser extension, built-in protection, VPN, or DNS filter. Reachable results identify requests your current setup allowed."}},
+        {"@type":"Question","name":"Why is my ad blocker not blocking everything?","acceptedAnswer":{"@type":"Answer","text":"Your blocker may be disabled, allow acceptable ads, use limited filter lists, or protect only one browser. First-party ads, native placements, and sponsored content can also be delivered differently from known third-party ad domains."}},
+        {"@type":"Question","name":"Can this test check DNS ad blocking?","acceptedAnswer":{"@type":"Answer","text":"Yes. The test can show whether known ad and tracker hosts are unreachable through private DNS, a router-level filter, or a VPN. It cannot identify which protection layer performed the block."}},
+        {"@type":"Question","name":"Does a 100% adblock test score mean every ad is blocked?","acceptedAnswer":{"@type":"Answer","text":"No. The headline Protection Score is a weighted module summary; use the Raw Block Rate for the direct blocked-versus-total result. First-party ads, native ads, sponsored posts, video ads, and new or site-specific delivery methods may still appear."}},
+        {"@type":"Question","name":"Why do different ad blockers get different scores?","acceptedAnswer":{"@type":"Answer","text":"Tools use different filter lists, update schedules, default settings, and blocking methods. Your browser, enabled privacy lists, custom rules, VPN, and DNS provider can all change the combined result."}},
+        {"@type":"Question","name":"Can this test check browser, VPN, and DNS-level ad blocking?","acceptedAnswer":{"@type":"Answer","text":"Yes. Enable your chosen protection and run the test. The score reflects the combined filtering of this browser, VPN, private DNS, and network, so it cannot always attribute a block to one specific layer."}},
+        {"@type":"Question","name":"Why are trackers and analytics tested separately from ads?","acceptedAnswer":{"@type":"Answer","text":"Some blockers stop visible advertising but allow measurement or social tracking requests. Separate categories reveal which kinds of requests your setup blocks instead of hiding them inside one total."}},
+        {"@type":"Question","name":"Should I test in a private window too?","acceptedAnswer":{"@type":"Answer","text":"Yes, if you use private browsing regularly. Extensions may need separate permission to run there, while browser protections and cookie behavior can also differ from a normal window."}}
+      ]
+    }
+  </script>
+</head>
+<body class="test-idle">
+  <main class="site-shell">
+    <section class="hero-panel" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Super Adblock Test · Live protection check</p>
+        <h1 id="page-title" class="jumbotron-header">Adblock Test: Check If Your Ad Blocker Works</h1>
+        <p class="hero-text">
+          Run a free ad blocker test to check whether your browser extension, VPN, DNS filter, or built-in blocker stops ads, trackers, analytics scripts, social tracking, and known ad domains.
+        </p>
+        <div class="hero-actions">
+          <button class="btn retryBtn" id="retest" type="button" aria-label="Start the ad block test">
+            <span class="actionIcon" aria-hidden="true">
+              <i class="fa-solid fa-play"></i>
+            </span>
+            <span class="actionLabel">Start test</span>
+          </button>
+          <a class="hero-guides-link" href="/guides/" aria-label="Browse Super Adblock Test guides">
+            <span>Explore guides</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+          <a class="text-link results-link" href="#test">View detailed results</a>
+        </div>
+        <p class="hero-support"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Works with browser extensions, VPN ad blockers, private DNS, router filters, and built-in browser protection.</p>
+      </div>
+
+      <div class="score-card" id="scoreCard" aria-live="polite">
+        <div class="score-header">
+          <span>Protection score</span>
+          <span id="scoreState">Testing</span>
+        </div>
+        <div class="score-value">
+          <h2 id="percentage" class="center">0</h2>
+        </div>
+        <div class="score-meter" aria-hidden="true">
+          <span id="scoreMeterFill"></span>
+        </div>
+        <p id="testProgress" class="progress-copy">Tap Start test to check this browser's ad blocking.</p>
+        <div class="adblockStat" id="adblockTestLog">
+          <h2 class="p-md-0 px-3">Ready to test</h2>
+        </div>
+      </div>
+    </section>
+
+    <section class="diagnostic-report-section supporting-section" id="diagnosticReportSection" aria-labelledby="diagnostic-report-heading">
+      <div class="section-heading">
+        <div class="section-title-stack">
+          <p class="eyebrow">Diagnostic report</p>
+          <h2 id="diagnostic-report-heading">Protection breakdown</h2>
+        </div>
+        <button class="sectionInfoBtn" id="protectionInfoBtn" type="button" aria-label="About the protection breakdown">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        </button>
+      </div>
+    </section>
+
+    <section class="info-grid supporting-section" aria-label="About the ad block test">
+      <article>
+        <span class="info-icon"><i class="fa-solid fa-shield-halved"></i></span>
+        <h2>What we test</h2>
+        <p>We probe known ad, analytics, social, error tracking, mixed tracker, and OEM vendor hosts using the current network path.</p>
+      </article>
+      <article>
+        <span class="info-icon"><i class="fa-solid fa-circle-check"></i></span>
+        <h2>How to read it</h2>
+        <p>Blocked means the request failed or was intercepted. Reachable means the host or probe looked reachable from this browser.</p>
+      </article>
+      <article>
+        <span class="info-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+        <h2>Remember</h2>
+        <p>A perfect score here is a strong signal, but real-world blocking still depends on filter lists, apps, VPN settings, and DNS rules.</p>
+      </article>
+    </section>
+
+    <section class="demo-section homepage-only" aria-labelledby="demo-heading">
+      <div class="demo-copy">
+        <p class="eyebrow">Quick demo</p>
+        <h2 id="demo-heading">See the test in action</h2>
+        <p>
+          A short walkthrough of the start flow, live score, and detailed results. The video loads only after you tap play.
+        </p>
+      </div>
+      <div class="demo-player" id="demoPlayer">
+        <button
+          class="demo-poster"
+          type="button"
+          aria-label="Play Super AdBlock Test demo video"
+          data-video-webm="./assets/video/superadblock-promo-v2.webm?v=20260810-1"
+          data-video-mp4="./assets/video/superadblock-promo-v2.mp4?v=20260810-1"
+          data-video-poster="./assets/video/superadblock-demo-poster.jpg?v=20260810-1"
+        >
+          <picture>
+            <source srcset="./assets/video/superadblock-demo-poster.avif?v=20260810-1" type="image/avif">
+            <source srcset="./assets/video/superadblock-demo-poster.webp?v=20260810-1" type="image/webp">
+            <img
+              src="./assets/video/superadblock-demo-poster.jpg?v=20260810-1"
+              alt="Preview of the Super AdBlock Test demo video"
+              width="1280"
+              height="720"
+              loading="lazy"
+              decoding="async"
+              fetchpriority="low"
+            >
+          </picture>
+          <span class="demo-play" aria-hidden="true">
+            <i class="fa-solid fa-play"></i>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <section class="results-section supporting-section" aria-labelledby="results-heading">
+      <div class="section-heading">
+        <div class="section-title-stack">
+          <p class="eyebrow">Detailed results</p>
+          <h2 id="results-heading">Domain categories</h2>
+        </div>
+      </div>
+      <div id="test" class="test_wrapper"></div>
+    </section>
+
+    <aside class="test-guide-cta" aria-labelledby="test-guide-heading">
+      <div>
+        <p class="eyebrow">Understand your result</p>
+        <h2 id="test-guide-heading">Not sure what your score means?</h2>
+        <p>See how each result is classified, how the total is calculated, and what a 100% score can—and cannot—prove.</p>
+      </div>
+      <a href="/guides/adblock-test-score-explained/">Read the score guide <span aria-hidden="true">→</span></a>
+      <a href="/guides/why-is-my-adblock-not-working/">Fix a weak test result <span aria-hidden="true">→</span></a>
+    </aside>
+
+    <section class="content-section homepage-only" aria-labelledby="checks-heading">
+      <div class="content-heading">
+        <p class="eyebrow">Test coverage</p>
+        <h2 id="checks-heading">What does this adblock test check?</h2>
+        <p>Super Adblock Test checks whether common ad networks, analytics scripts, tracker domains, social tracking hosts, error trackers, vendor tracking domains, and DNS-level ad domains are blocked in your current browser and network setup.</p>
+      </div>
+      <div class="feature-grid feature-grid-four">
+        <article class="feature-card"><span class="info-icon"><i class="fa-solid fa-rectangle-ad" aria-hidden="true"></i></span><h3>Ad network blocking</h3><p>Checks whether known advertising domains and ad scripts are blocked before they can load.</p></article>
+        <article class="feature-card"><span class="info-icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span><h3>Tracker blocking</h3><p>Tests tracking and analytics domains used to measure visits, behavior, conversions, and cross-site activity.</p></article>
+        <article class="feature-card"><span class="info-icon"><i class="fa-solid fa-network-wired" aria-hidden="true"></i></span><h3>DNS adblock test</h3><p>Helps identify whether a VPN, private DNS, or router-level filter is blocking requests before they reach the browser. <a href="/guides/dns-adblock-test/">Learn how to test DNS blocking.</a></p></article>
+        <article class="feature-card"><span class="info-icon"><i class="fa-solid fa-puzzle-piece" aria-hidden="true"></i></span><h3>Browser extension test</h3><p>Checks the protection currently active in this browser without assuming which extension or built-in feature performed the block. <a href="/guides/is-my-adblock-working/">Learn how to verify protection.</a></p></article>
+      </div>
+    </section>
+
+    <section class="content-section result-guide homepage-only" aria-labelledby="read-results-heading">
+      <div class="result-guide-copy">
+        <p class="eyebrow">Score guide</p>
+        <h2 id="read-results-heading">How to read your adblock test results</h2>
+        <p><strong>Blocked</strong> means the request failed, was intercepted, or could not reach the test domain. <strong>Reachable or unblocked</strong> means the domain appeared accessible from this browser and network.</p>
+        <p>A high score is a strong signal, but not a guarantee that every ad online will be blocked. Real-world protection depends on filter lists, DNS rules, browser settings, VPN settings, and app-level protection.</p>
+      </div>
+      <aside class="meaning-card" aria-label="Result meanings">
+        <h3>Result meaning</h3>
+        <dl>
+          <div><dt><span class="meaning-dot blocked-dot"></span>Blocked</dt><dd>Protected for that probe</dd></div>
+          <div><dt><span class="meaning-dot reachable-dot"></span>Reachable</dt><dd>Not blocked in this setup</dd></div>
+          <div><dt><span class="meaning-dot mixed-dot"></span>Mixed</dt><dd>Review the category before changing your setup</dd></div>
+          <div><dt><span class="meaning-dot perfect-dot"></span>100%</dt><dd>Strong result, not a universal guarantee</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="content-section homepage-only" aria-labelledby="improve-heading">
+      <div class="content-heading compact-heading">
+        <p class="eyebrow">Improve protection</p>
+        <h2 id="improve-heading">How to improve your adblock test score</h2>
+        <p>If your score is low, your blocker may be disabled, missing privacy filter lists, allowing acceptable ads, or only blocking ads inside one browser instead of across your whole device. Use the <a href="/guides/why-is-my-adblock-not-working/">adblock troubleshooting guide</a> for deeper checks.</p>
+      </div>
+      <ol class="step-list">
+        <li><span>1</span><p>Check that your ad blocker extension is enabled in this browser.</p></li>
+        <li><span>2</span><p>Turn off “acceptable ads” or “allow non-intrusive ads” if your blocker has that option.</p></li>
+        <li><span>3</span><p>Enable privacy and tracking filter lists such as EasyPrivacy or your blocker’s tracking protection list.</p></li>
+        <li><span>4</span><p>Use a DNS-level or VPN ad blocker when you need supported protection outside one browser.</p></li>
+        <li><span>5</span><p>Run the test again after clearing cache or opening a private window.</p></li>
+      </ol>
+    </section>
+
+    <section class="limitation-card homepage-only" aria-labelledby="limitations-heading">
+      <span class="info-icon"><i class="fa-solid fa-circle-info" aria-hidden="true"></i></span>
+      <div><p class="eyebrow">Honest limits</p><h2 id="limitations-heading">What this test can and cannot prove</h2><p>The headline Protection Score is a weighted summary of the tested modules. The Raw Block Rate shows the direct blocked-versus-total result. Neither guarantees that every ad, sponsored post, first-party ad, native ad, YouTube ad, or anti-adblock script will be blocked. Some sites serve ads from the same domain as their content, and blockers can behave differently in normal windows, private windows, mobile browsers, and apps. Treat the result as a practical signal, not a full privacy audit.</p></div>
+    </section>
+
+    <section class="guide-preview-section homepage-only" aria-labelledby="guides-heading">
+      <div class="content-heading">
+        <p class="eyebrow">Super Adblock Test guides</p>
+        <h2 id="guides-heading">Understand your score. Improve your protection.</h2>
+        <p>Choose the guide that matches what you need next: verify the test, understand the indicators, fix an unexpected result, or check network-level filtering.</p>
+      </div>
+      <div class="guide-preview-grid">
+        <a class="guide-card" href="/guides/is-my-adblock-working/">
+          <span class="guide-category">Start here</span><h3>Is My Adblock Working?</h3><p>Run a clean test, confirm protection is active, and learn why the result can change between browsers or networks.</p><span class="guide-card-footer"><span class="guide-read-time">4 min read</span><span class="guide-link">Read guide <span aria-hidden="true">→</span></span></span>
+        </a>
+        <a class="guide-card" href="/guides/adblock-test-score-explained/"><span class="guide-category">Score guide</span><h3>How Your Score Is Measured</h3><p>Understand blocked, reachable, and mixed indicators—and exactly what a 100% result represents.</p><span class="guide-card-footer"><span class="guide-read-time">3 min read</span><span class="guide-link">Read guide <span aria-hidden="true">→</span></span></span></a>
+        <a class="guide-card" href="/guides/why-is-my-adblock-not-working/"><span class="guide-category">Troubleshooting</span><h3>Fix a Weak or Unexpected Result</h3><p>Check disabled protection, filter settings, browser permissions, allowed ads, and site exceptions one change at a time.</p><span class="guide-card-footer"><span class="guide-read-time">5 min read</span><span class="guide-link">Read guide <span aria-hidden="true">→</span></span></span></a>
+        <a class="guide-card" href="/guides/vpn-ad-blocker-test/"><span class="guide-category">Network protection</span><h3>Test VPN and DNS Filtering</h3><p>Learn how system-wide filtering appears in this test and why a browser result cannot always identify the layer that blocked it.</p><span class="guide-card-footer"><span class="guide-read-time">5 min read</span><span class="guide-link">Read guide <span aria-hidden="true">→</span></span></span></a>
+      </div>
+      <div class="guide-preview-actions">
+        <a class="privacy-guides-all" href="/guides/">Browse all guides <span aria-hidden="true">→</span></a>
+        <a class="privacy-guides-all guide-app-reports-link" href="/guides/#tested-apps">View tested app reports <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <section class="seo-support-section homepage-only" aria-labelledby="seo-support-heading">
+      <div class="section-heading">
+        <div class="section-title-stack">
+          <p class="eyebrow">Result guide</p>
+          <h2 id="seo-support-heading">Adblock test FAQs</h2>
+        </div>
+      </div>
+      <div class="seo-accordion">
+        <details>
+          <summary>
+            <span>How do I test if my ad blocker is working?</span>
+            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+          </summary>
+          <p>
+            Select Start test and wait for every probe to finish. Blocked results show that the tested request was stopped by your browser extension, built-in protection, VPN, or DNS filter. Reachable results identify requests your current setup allowed.
+          </p>
+        </details>
+        <details>
+          <summary>
+            <span>Why is my ad blocker not blocking everything?</span>
+            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+          </summary>
+          <p>
+            Your blocker may be disabled, allow acceptable ads, use limited filter lists, or protect only one browser. First-party ads, native placements, and sponsored content can also be delivered differently from known third-party ad domains.
+          </p>
+        </details>
+        <details>
+          <summary>
+            <span>Can this test check DNS ad blocking?</span>
+            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+          </summary>
+          <p>
+            Yes. The test can show whether known ad and tracker hosts are unreachable through private DNS, a router-level filter, or a VPN. It cannot identify which protection layer performed the block.
+          </p>
+        </details>
+        <details><summary><span>Does a 100% adblock test score mean every ad is blocked?</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary><p>No. The headline Protection Score is a weighted module summary; use the Raw Block Rate for the direct blocked-versus-total result. First-party ads, native ads, sponsored posts, video ads, and new or site-specific delivery methods may still appear.</p></details>
+        <details><summary><span>Why do different ad blockers get different scores?</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary><p>Tools use different filter lists, update schedules, default settings, and blocking methods. Your browser, enabled privacy lists, custom rules, VPN, and DNS provider can all change the combined result.</p></details>
+        <details><summary><span>Can this test check browser, VPN, and DNS-level ad blocking?</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary><p>Yes. Enable your chosen protection and run the test. The score reflects the combined filtering of this browser, VPN, private DNS, and network, so it cannot always attribute a block to one specific layer.</p></details>
+        <details><summary><span>Why are trackers and analytics tested separately from ads?</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary><p>Some blockers stop visible advertising but allow measurement or social tracking requests. Separate categories reveal which kinds of requests your setup blocks instead of hiding them inside one total.</p></details>
+        <details><summary><span>Should I test in a private window too?</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary><p>Yes, if you use private browsing regularly. Extensions may need separate permission to run there, while browser protections and cookie behavior can also differ from a normal window.</p></details>
+      </div>
+      <div class="coverage-note"><i class="fa-solid fa-rotate" aria-hidden="true"></i><div><strong>Last updated: 2026</strong><span>Tests ad, analytics, tracker, social tracking, vendor, and DNS-level blocking signals.</span></div></div>
+    </section>
+  </main>
+
+  <div class="modal fade" id="copyModal" tabindex="-1" aria-labelledby="copyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content copyModalContent">
+        <div class="modal-header">
+          <h3 class="modal-title" id="copyModalLabel">Copied to clipboard</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="text-center">
+      <nav class="footer-links" aria-label="Super Adblock extension information">
+        <a href="/extension-about/">About the extension</a>
+        <a href="/extension-faq/">Extension FAQ</a>
+        <a href="/extension-contact/">Contact</a>
+        <a href="/extension-terms-of-use/">Terms</a>
+      </nav>
+      <p class="mt-auto mb-auto">© 2026 Super AdBlock Test. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="./adblock.js?v=20260810-direct-run-1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.min.js" integrity="sha384-Rx+T1VzGupg4BHQYs2gCW9It+akI2MM/mndMCy36UVfodzcJcF0GGLxZIzObiEfa" crossorigin="anonymous"></script>
+
+  <script src="/js/plausible.js?v=3" async></script>
+  <script>
+    const demoPoster = document.querySelector('.demo-poster');
+    if (demoPoster) {
+      demoPoster.addEventListener('click', () => {
+        const player = document.createElement('div');
+        player.className = 'demo-video-wrap is-loading';
+
+        const video = document.createElement('video');
+        video.className = 'demo-video';
+        video.setAttribute('aria-label', 'Super AdBlock Test demonstration');
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+        const posterImage = demoPoster.querySelector('img');
+        video.poster = posterImage?.currentSrc || demoPoster.dataset.videoPoster;
+
+        const webmSource = document.createElement('source');
+        webmSource.src = demoPoster.dataset.videoWebm;
+        webmSource.type = 'video/webm; codecs="vp9, opus"';
+
+        const mp4Source = document.createElement('source');
+        mp4Source.src = demoPoster.dataset.videoMp4;
+        mp4Source.type = 'video/mp4; codecs="avc1.640028, mp4a.40.2"';
+
+        const status = document.createElement('span');
+        status.className = 'demo-video-status';
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        status.textContent = 'Loading demo…';
+
+        const fallback = document.createElement('p');
+        fallback.className = 'demo-video-fallback';
+        fallback.hidden = true;
+        fallback.append('The demo could not play. ');
+
+        const downloadLink = document.createElement('a');
+        downloadLink.href = demoPoster.dataset.videoMp4;
+        downloadLink.textContent = 'Download the MP4 video';
+        fallback.append(downloadLink, '.');
+
+        video.append(webmSource, mp4Source);
+        player.append(video, status, fallback);
+        demoPoster.replaceWith(player);
+
+        let hasStarted = false;
+        const failedSources = new Set();
+
+        const setPlaying = () => {
+          hasStarted = true;
+          player.classList.remove('is-loading');
+          player.classList.remove('needs-play');
+          status.textContent = '';
+        };
+
+        const setLoading = () => {
+          if (video.paused || video.ended) return;
+          player.classList.add('is-loading');
+          status.textContent = 'Loading demo…';
+        };
+
+        const setPaused = () => {
+          player.classList.remove('is-loading');
+          if (hasStarted) status.textContent = '';
+        };
+
+        const setNeedsPlay = () => {
+          player.classList.remove('is-loading');
+          player.classList.add('needs-play');
+          status.textContent = 'Select play to start the demo.';
+        };
+
+        const setError = () => {
+          player.classList.remove('is-loading');
+          player.classList.remove('needs-play');
+          player.classList.add('has-error');
+          status.textContent = 'Video unavailable';
+          fallback.hidden = false;
+        };
+
+        const trackSourceError = (source) => {
+          failedSources.add(source);
+          if (failedSources.size === 2) setError();
+        };
+
+        webmSource.addEventListener('error', () => trackSourceError(webmSource));
+        mp4Source.addEventListener('error', () => trackSourceError(mp4Source));
+        video.addEventListener('playing', setPlaying);
+        video.addEventListener('pause', setPaused);
+        video.addEventListener('ended', setPaused);
+        video.addEventListener('waiting', setLoading);
+        video.addEventListener('stalled', setLoading);
+        video.addEventListener('error', setError);
+
+        // Start inside the original click event so Safari keeps the user gesture.
+        try {
+          video.focus({ preventScroll: true });
+        } catch {
+          video.focus();
+        }
+        const playAttempt = video.play();
+        if (playAttempt) {
+          playAttempt.catch(setNeedsPlay);
+        }
+      }, { once: true });
+    }
+  </script>
+</body>
+</html>

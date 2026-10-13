@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ch">
+<head>
+<meta charset="utf-8">
+<title>🛡️ Check your AdBlock effectiveness Мобильные прокси - mobileproxy.space</title>
+<link rel="stylesheet" href="/build/css/fontawesome.min.css?1705424045">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"https://mobileproxy.space/#organization","name":"移动代理","url":"https://mobileproxy.space/","logo":{"@type":"ImageObject","url":"https://cdn-delivery.mobileproxy.space/build/images/logo/mp.png","width":558,"height":629},"sameAs":["https://t.me/mobileproxy_space","https://vk.com/mobileproxyspace","https://x.com/MobileproxyS"]},
+{"@type":"WebSite","@id":"https://mobileproxy.space/#website","url":"https://mobileproxy.space/","name":"移动代理","inLanguage":"zh"}
+]}
+</script>
+<script>
+window.trackEvent = function(name, params) {
+params = params || {};
+if (!params.only_ga && typeof ym === 'function') {
+ym(60840904, 'reachGoal', name, params.ym_params || {});
+}
+};
+</script>
+</head>
+<body>
+<nav class="container navbar navbar-expand-lg">移动代理 导航</nav>
+<div>
+<style>
+.score-container { position: relative; width: 180px; }
+.domain-list > div { border-bottom: 1px solid var(--gray-100); }
+</style>
+<h1>广告拦截器测试</h1>
+<p>检查您的解决方案如何有效地阻止广告、跟踪器和恶意脚本</p>
+<span>487 个域名</span>
+<span>12 个分类</span>
+<button id="startBtn">开始测试</button>
+<div class="category-card"><h6>广告</h6><span>--</span><span>0/66</span></div>
+<div class="category-card"><h6>分析</h6><span>--</span><span>0/63</span></div>
+<div class="category-card"><h6>跟踪</h6><span>--</span><span>0/47</span></div>
+<div class="category-card"><h6>错误监控</h6><span>--</span><span>0/35</span></div>
+<div class="info-card">测试原理 — 我们检查连接到流行广告和分析服务的能力。</div>
+</div>
+<footer class="page-footer font-small pt-5">
+<a href="/ch/proxy_checker.html">免费代理检查器</a>
+<a href="https://mobileproxy.space/ch/my-ip.html">了解您的IP地址</a>
+</footer>
+<script>
+window.TalkMeSetup = {
+domain: 'mobileproxy.space',
+language: "ch"
+};
+</script>
+<script>
+const AdBlockTest = {
+version: '3.0',
+i18n: {
+cat_ads: '广告',
+cat_analytics: '分析',
+cat_tracking: '跟踪',
+cat_errors: '错误监控'
+},
+tests: {
+ads: {
+name: 'cat_ads',
+icon: 'fa-ad',
+domains: [
+'pagead2.googlesyndication.com','adservice.google.com',
+'ad.doubleclick.net','ib.adnxs.com'
+]
+},
+analytics: {
+name: 'cat_analytics',
+icon: 'fa-chart-line',
+domains: [
+'google-analytics.com','ssl.google-analytics.com','hotjar.com'
+]
+},
+tracking: {
+name: 'cat_tracking',
+icon: 'fa-eye',
+domains: [
+'bat.bing.com','clarity.ms'
+]
+},
+errors: {
+name: 'cat_errors',
+icon: 'fa-bug',
+domains: [
+'sentry.io','notify.bugsnag.com'
+]
+}
+}
+};
+function runTest() {
+for (const key in AdBlockTest.tests) {
+const item = AdBlockTest.tests[key];
+item.domains.forEach(function(d) {
+const img = new Image();
+img.src = 'https://' + d + '/pixel.gif?cb=' + Date.now();
+});
+}
+}
+</script>
+<script>
+$(window).on('load', function() {
+$(".modal-dialog").draggable({ cursor: "move" });
+});
+</script>
+</body>
+</html>
