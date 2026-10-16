@@ -34,3 +34,6 @@ Entries discovered by the Agent during task execution should follow this format:
   - 构建命令模板：`export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ANDROID_HOME=/opt/android-sdk && ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --no-daemon`（在 /workspace 下执行）。
   - Gradle 命令必须经 background_terminal_create 后台执行（内存约 40% 限额，全量构建约 3 分钟）。
   - 推送含 `.github/workflows/*` 变更的提交会被 GitHub 拒绝（当前 PAT 无 workflow scope）；此类提交只能留在本地（如 b9369dc），需用户用带 workflow scope 的凭据推送。
+  - 正式发布 keystore 位于 app/signing/release.jks（alias adguardtester，凭据在本地 app/signing.properties，均 gitignored 永不入库）；丢失将无法对既有用户发升级包，需提示用户备份。
+  - 发 GitHub Release 用 `gh release create v<版本> <apk>#<显示名> --notes-file <文件>`（GH_TOKEN 环境变量传令牌）；tag 会随 git push origin v<版本> 先推上去，Release 页面自动附带 Source code zip/tar.gz。
+  - release 构建已开 R8 minify + shrinkResources（proguard-android-optimize），签名 APK 约 1.2MB；CI 上无签名材料，产出 unsigned release 仅作编译验证。
