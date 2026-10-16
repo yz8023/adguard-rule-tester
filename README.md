@@ -27,7 +27,9 @@
 # APK: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-当前版本 `1.3.0`（versionCode `4`）。此处构建的 debug APK 仅用于试装；正式发布需要使用自己的 release keystore 签名。
+当前版本 `1.3.0`（versionCode `4`）。正式发布见 GitHub Releases：签名 release APK（R8 裁剪 + 资源收缩，约 1.2 MB）与源码归档（tag 自动附带 zip/tar.gz）。
+
+签名材料（`app/signing/` 与 `app/signing.properties`）仅存在于本机构建环境，永不入库；在无签名材料的环境（如 CI）构建的 release APK 为未签名版本，仅用于编译验证。
 
 1. 安装 APK，打开 AdGuard（本地 VPN 或 DNS 模式）保持拦截生效。
 2. App 内：`解析测试列表` → `开始测试` → 完成后自动生成规则 → `复制/分享/保存文件`。

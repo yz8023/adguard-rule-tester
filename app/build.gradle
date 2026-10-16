@@ -52,7 +52,9 @@ android {
     buildTypes {
         release {
             if (releaseSigningReady) signingConfig signingConfigs.release
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
         }
     }
 
