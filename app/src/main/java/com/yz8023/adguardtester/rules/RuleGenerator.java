@@ -8,11 +8,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
@@ -50,6 +48,7 @@ public final class RuleGenerator {
         int nBlocked = 0;
         int nDead = 0;
         int nUnknown = 0;
+        int nCancelled = 0;
         int nTotal = results == null ? 0 : results.size();
         Set<String> sources = new LinkedHashSet<>();
         if (results != null) {
@@ -66,6 +65,8 @@ public final class RuleGenerator {
                     nBlocked++;
                 } else if (r.status == ProbeStatus.DEAD) {
                     nDead++;
+                } else if (r.status == ProbeStatus.CANCELLED) {
+                    nCancelled++;
                 } else {
                     nUnknown++;
                 }
@@ -98,7 +99,8 @@ public final class RuleGenerator {
                 .append(" | not-blocked ").append(need.size())
                 .append(" | blocked ").append(nBlocked)
                 .append(" | dead ").append(nDead)
-                .append(" | unknown ").append(nUnknown).append('\n');
+                .append(" | unknown ").append(nUnknown)
+                .append(" | cancelled ").append(nCancelled).append('\n');
         sb.append("!\n");
 
         String suffix = o.important ? "$important" : "";
@@ -110,7 +112,7 @@ public final class RuleGenerator {
             if (host == null || host.isEmpty() || !written.add(host)) {
                 continue;
             }
-            if (o.groupByCategory && !host.isEmpty()) {
+            if (o.groupByCategory) {
                 String cat = r.target.category == null ? "未分类" : r.target.category;
                 if (!cat.equals(lastCategory)) {
                     sb.append("! ---- ").append(cat).append(" ----\n");
@@ -131,15 +133,14 @@ public final class RuleGenerator {
 
     /** 仅导出未拦截主机名列表（分享/复核用）。 */
     public static List<String> unblockedHosts(List<ProbeResult> results) {
-        Map<String, Boolean> seen = new LinkedHashMap<>();
+        Set<String> seen = new LinkedHashSet<>();
         List<String> out = new ArrayList<>();
         if (results == null) {
             return out;
         }
         for (ProbeResult r : results) {
             if (r != null && r.target != null && r.status == ProbeStatus.NOT_BLOCKED
-                    && !seen.containsKey(r.target.host)) {
-                seen.put(r.target.host, Boolean.TRUE);
+                    && seen.add(r.target.host)) {
                 out.add(r.target.host);
             }
         }

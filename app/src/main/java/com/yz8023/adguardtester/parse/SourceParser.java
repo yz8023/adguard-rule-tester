@@ -316,6 +316,7 @@ public final class SourceParser {
         }
         String cleaned = JSON_LD_BLOCK.matcher(text).replaceAll(" ");
         cleaned = ATTR_TAGS.matcher(cleaned).replaceAll(" ");
+        CategoryIndex catIndex = new CategoryIndex(cleaned, cleaned.length());
         // GetBlockify 在服务端渲染的测试列表用 itemProp=name 标记每个主机；只读取该语义区，
         // 不扫描它的 Next.js/第三方脚本，避免把框架依赖当作测试域名。
         Matcher namedHost = NAMED_HOST_NODE.matcher(cleaned);
@@ -325,7 +326,7 @@ public final class SourceParser {
             String host = namedHost.group(1).trim();
             String category = categoryHeadingBefore(cleaned, namedHost.start());
             if (category == null) {
-                category = categoryBefore(cleaned, namedHost.start());
+                category = catIndex.before(namedHost.start());
             }
             emit("https://" + host.toLowerCase(Locale.ROOT) + "/",
                     category, "", sourceName, pageHost, merged);
@@ -340,7 +341,7 @@ public final class SourceParser {
             if (!isRootUrl(raw)) {
                 continue;
             }
-            String category = categoryBefore(cleaned, u.start());
+            String category = catIndex.before(u.start());
             emit(raw, category, "", sourceName, pageHost, merged);
         }
         // 2) 引号内裸域名：整串必须是一个域名。
@@ -357,7 +358,7 @@ public final class SourceParser {
             if (!isPlausibleHost(cand)) {
                 continue;
             }
-            String category = categoryBefore(cleaned, q.start());
+            String category = catIndex.before(q.start());
             emit("https://" + cand.toLowerCase(Locale.ROOT) + "/", category, "", sourceName, pageHost, merged);
         }
     }
@@ -379,29 +380,66 @@ public final class SourceParser {
         return canonicalCategory(label, null);
     }
 
-    /** 找出 offset 之前最近的分类词。 */
-    private static String categoryBefore(String text, int offset) {
-        String best = "未分类";
-        int bestPos = -1;
-        for (String[] pair : CN_CATEGORIES) {
-            int idx = text.indexOf(pair[0]);
-            while (idx >= 0 && idx < offset) {
-                if (idx > bestPos) {
-                    bestPos = idx;
-                    best = pair[1];
+    /**
+     * 在 text 里建立“位置 → 分类”的有序索引：中文分类词逐个 indexOf 扫一遍，
+     * 英文分类词正则扫一遍；此后每个目标主机用二分查找取最近分类词。
+     * 大页面（数百主机 × 数百 KB 文本）从 O(hosts×textLen) 降为 O(textLen)。
+     */
+    private static final class CategoryIndex {
+        private final long[] positions;
+        private final String[] categories;
+
+        CategoryIndex(String text, int limit) {
+            List<long[]> pos = new ArrayList<>();
+            List<String> cats = new ArrayList<>();
+            for (String[] pair : CN_CATEGORIES) {
+                int idx = text.indexOf(pair[0]);
+                while (idx >= 0 && idx < limit) {
+                    pos.add(new long[]{idx});
+                    cats.add(pair[1]);
+                    idx = text.indexOf(pair[0], idx + 1);
                 }
-                idx = text.indexOf(pair[0], idx + 1);
+            }
+            Matcher m = EN_CATEGORY_WORD.matcher(text);
+            while (m.find() && m.start() < limit) {
+                String canon = canonicalCategory(m.group(1), "未分类");
+                pos.add(new long[]{m.start()});
+                cats.add(canon);
+            }
+            // 按位置排序（插入序不稳定，需统一排序）。
+            Integer[] order = new Integer[pos.size()];
+            for (int i = 0; i < order.length; i++) {
+                order[i] = i;
+            }
+            final List<long[]> posRef = pos;
+            java.util.Arrays.sort(order, (a, b) -> Long.compare(posRef.get(a)[0], posRef.get(b)[0]));
+            positions = new long[order.length];
+            categories = new String[order.length];
+            for (int i = 0; i < order.length; i++) {
+                positions[i] = pos.get(order[i])[0];
+                categories[i] = cats.get(order[i]);
             }
         }
-        Matcher m = EN_CATEGORY_WORD.matcher(text);
-        while (m.find() && m.start() < offset) {
-            if (m.start() > bestPos) {
-                bestPos = m.start();
-                best = canonicalCategory(m.group(1), "未分类");
+
+        /** offset 之前最近的分类词；无命中返回 "未分类"。 */
+        String before(int offset) {
+            int lo = 0;
+            int hi = positions.length - 1;
+            int best = -1;
+            while (lo <= hi) {
+                int mid = (lo + hi) >>> 1;
+                if (positions[mid] < offset) {
+                    best = mid;
+                    lo = mid + 1;
+                } else {
+                    hi = mid - 1;
+                }
             }
+            return best >= 0 ? categories[best] : "未分类";
         }
-        return best;
     }
+
+    /** 读取最近一个 HTML 标题作为列表分类（供服务端渲染的语义化主机清单使用）。 */
 
     // ------------------------------------------------------------------
     // 目标校验与归一化
@@ -724,8 +762,12 @@ public final class SourceParser {
 
     /** 简易 JS 值解析游标。 */
     static final class C {
+        /** 嵌套深度上限：远程页面可能出现超深嵌套字面量，递归解析必须拦截以防 StackOverflowError。 */
+        private static final int MAX_DEPTH = 64;
+
         final String s;
         int i;
+        int depth;
 
         C(String s, int i) {
             this.s = s;
@@ -759,6 +801,9 @@ public final class SourceParser {
             if (i >= s.length()) {
                 throw new IllegalStateException("eof");
             }
+            if (depth >= MAX_DEPTH) {
+                throw new IllegalStateException("嵌套过深");
+            }
             char c = s.charAt(i);
             if (c == 'l' && s.regionMatches(i, "list", 0, 4)) {
                 int save = i;
@@ -790,10 +835,20 @@ public final class SourceParser {
                 i = save;
             }
             if (c == '{') {
-                return object();
+                depth++;
+                try {
+                    return object();
+                } finally {
+                    depth--;
+                }
             }
             if (c == '[') {
-                return array();
+                depth++;
+                try {
+                    return array();
+                } finally {
+                    depth--;
+                }
             }
             if (c == '"' || c == '\'') {
                 return string();

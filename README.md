@@ -27,7 +27,7 @@
 # APK: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-当前版本 `1.2.0`（versionCode `3`）。此处构建的 debug APK 仅用于试装；正式发布需要使用自己的 release keystore 签名。
+当前版本 `1.3.0`（versionCode `4`）。此处构建的 debug APK 仅用于试装；正式发布需要使用自己的 release keystore 签名。
 
 1. 安装 APK，打开 AdGuard（本地 VPN 或 DNS 模式）保持拦截生效。
 2. App 内：`解析测试列表` → `开始测试` → 完成后自动生成规则 → `复制/分享/保存文件`。
@@ -52,7 +52,19 @@
 - Turtlecute：真实页面引用 `/js/index.js`，该脚本通过 `JSON.parse('…')` 保存分类主机数据；单测断言域名、分类和厂商归属。
 - Super Adblock Test：解析 `/adblock.js` 中的 `HOST_TESTS`，支持 ``list(`…`,)`` 模板列表和对象尾随逗号；只抓测试数据脚本，避免分析 Bootstrap/统计脚本。
 - GetBlockify：从 SSR `itemProp="name"` 语义列表抽取主机，并根据最近的标题分类；不下载 Next.js bundle，也过滤 YouTube / Googlevideo / Spotify 等内容根域。
-- 目前 JVM 单测共 22 项，覆盖上述来源、安全验证页识别、URL 纠错、AdGuard 规则生成和去重。
+- 目前 JVM 单测共 40 项，覆盖上述来源、安全验证页识别、URL 纠错、AdGuard 规则生成、去重、探测分类（MockWebServer）与 DoH 判定/缓存语义。
+
+## 1.3.0 变更（稳定性与合规修复）
+
+- **防远程崩溃**：JS 字面量解析加嵌套深度上限（64 层），恶意页面构造的超深嵌套不再引发 `StackOverflowError` 崩溃。
+- **取消语义**：中途取消的探测目标标记为“已取消”，即使勾选“无法验证也写入规则”也不会把未测过的域名写进规则。
+- **DoH 缓存**：`ERROR` 不再缓存，DoH 一次抖动不会让域名整个会话都停留“无法验证”；确定结论（存活/NXDOMAIN/无记录）仍缓存。
+- **探测提速**：目标探测从 GET 改为 HEAD，判定口径不变（任意 HTTP 状态码 = 未拦截），大幅减少流量。
+- **超时语义**：连接超时明确标注“网络慢或被静默丢弃，无法判定”，与“连接被拒绝”区分，减少把慢站误读为已拦截。
+- **旋转屏恢复**：引擎/线程池/目标/结果迁至进程级运行时，横竖屏切换后界面自动恢复测试进度，后台任务不再泄漏 Activity。
+- **分类索引**：通用解析的分类定位从“每个域名全文重扫”改为一次预扫描 + 二分查找，大页面解析从 O(hosts×textLen) 降为 O(textLen)。
+- **深色适配**：结果状态色改引用主题资源，深色模式下红/绿对比度达标。
+- **平台合规**：targetSdk 34 → 36（含 edge-to-edge insets 适配），`allowBackup` 关闭，CI 增加 release 构建校验。
 
 ## 结构
 
@@ -62,12 +74,14 @@ app/src/main/java/com/yz8023/adguardtester/
   parse/    SourceParser                               （纯 JVM：结构化 JS / 语义化 HTML + 通用兜底）
   rules/    RuleGenerator                              （纯 JVM）
   probe/    ProbeEngine · DohVerifier                  （OkHttp，无 android.*）
-  net/      SourceFetcher                              （OkHttp，按来源筛选脚本、限量抓取）
-  ui/       ResultAdapter · MainActivity
-app/src/test/   SourceParserTest · SourceFetcherTest · RuleGeneratorTest + 站点夹具
+  net/      SourceFetcher · Sources                    （OkHttp，按来源筛选脚本、限量抓取）
+  util/     Texts                                      （纯 JVM）
+  ui/       ResultAdapter
+  AppRuntime · MainActivity                            （进程级共享状态 + 界面编排）
+app/src/test/   SourceParserTest · SourceFetcherTest · ProbeEngineTest · DohVerifierTest · RuleGeneratorTest + 站点夹具
 ```
 
-解析/生成逻辑不依赖 `android.*`，JVM 单测（22 项）：`./gradlew :app:testDebugUnitTest`。
+解析/生成/探测逻辑不依赖 `android.*`，JVM 单测（40 项）：`./gradlew :app:testDebugUnitTest`。
 
 ## 构建环境
 

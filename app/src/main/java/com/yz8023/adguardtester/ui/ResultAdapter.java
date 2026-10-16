@@ -1,6 +1,5 @@
 package com.yz8023.adguardtester.ui;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -64,6 +63,16 @@ public final class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.Hold
         }
     }
 
+    /** 批量恢复（旋转屏重建后），按优先级整体排序后一次性插入。 */
+    public void addAll(List<ProbeResult> items) {
+        if (items.isEmpty()) {
+            return;
+        }
+        data.addAll(items);
+        Collections.sort(data, RESULT_ORDER);
+        notifyDataSetChanged();
+    }
+
     @Override
     public int getItemCount() {
         return data.size();
@@ -91,7 +100,7 @@ public final class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.Hold
         meta.append(" · ").append(result.status.label);
         meta.append(" · ").append(result.detail);
         holder.tvMeta.setText(meta.toString());
-        holder.tvMeta.setTextColor(statusColor(result.status));
+        holder.tvMeta.setTextColor(statusColor(result.status, holder.itemView));
 
         String description = holder.itemView.getContext().getString(
                 R.string.copy_target_link_description, result.target.url);
@@ -118,24 +127,35 @@ public final class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.Hold
             case UNKNOWN:
                 return 2;
             case DEAD:
-            default:
                 return 3;
+            case CANCELLED:
+            default:
+                return 4;
         }
     }
 
-    private static int statusColor(ProbeStatus status) {
+    private static int statusColor(ProbeStatus status, View itemView) {
+        int res;
         switch (status) {
             case NOT_BLOCKED:
-                return Color.parseColor("#C62828");
+                res = R.color.status_not_blocked;
+                break;
             case BLOCKED_DNS:
             case BLOCKED_NETWORK:
-                return Color.parseColor("#2E7D32");
+                res = R.color.status_blocked;
+                break;
             case DEAD:
-                return Color.parseColor("#757575");
+                res = R.color.status_dead;
+                break;
+            case CANCELLED:
+                res = R.color.status_cancelled;
+                break;
             case UNKNOWN:
             default:
-                return Color.parseColor("#607D8B");
+                res = R.color.status_unknown;
+                break;
         }
+        return itemView.getContext().getColor(res);
     }
 
     static final class Holder extends RecyclerView.ViewHolder {

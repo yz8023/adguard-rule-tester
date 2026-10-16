@@ -12,4 +12,9 @@
     <color name="chip_surface">#E7EFFF</color>
     <color name="field_surface">#F8FAFF</color>
     <color name="text_secondary">#64748B</color>
+    <color name="status_not_blocked">#C62828</color>
+    <color name="status_blocked">#2E7D32</color>
+    <color name="status_dead">#757575</color>
+    <color name="status_unknown">#607D8B</color>
+    <color name="status_cancelled">#9E9E9E</color>
 </resources>

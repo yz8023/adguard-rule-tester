@@ -70,6 +70,19 @@ public class RuleGeneratorTest {
     }
 
     @Test
+    public void cancelledResultsNeverEnterRulesEvenWithIncludeUnknown() {
+        List<ProbeResult> results = Arrays.asList(
+                result("untested.example.com", "广告", ProbeStatus.CANCELLED),
+                result("unknown.example.co", "广告", ProbeStatus.UNKNOWN));
+        RuleGenerator.Options o = new RuleGenerator.Options();
+        o.includeUnknown = true;
+        String rules = RuleGenerator.generate(results, o);
+        assertFalse("取消的目标即使勾选 includeUnknown 也不得写入规则",
+                rules.contains("||untested.example.com^"));
+        assertTrue(rules.contains("| cancelled 1"));
+    }
+
+    @Test
     public void dedupesHostsAndSortsByCategoryThenHost() {
         List<ProbeResult> results = new ArrayList<>(Arrays.asList(
                 result("zzz.example.com", "广告", ProbeStatus.NOT_BLOCKED),

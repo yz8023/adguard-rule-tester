@@ -18,6 +18,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -25,10 +29,12 @@ import com.yz8023.adguardtester.model.ProbeResult;
 import com.yz8023.adguardtester.model.ProbeStatus;
 import com.yz8023.adguardtester.model.TestTarget;
 import com.yz8023.adguardtester.net.SourceFetcher;
+import com.yz8023.adguardtester.net.Sources;
 import com.yz8023.adguardtester.parse.SourceParser;
 import com.yz8023.adguardtester.probe.ProbeEngine;
 import com.yz8023.adguardtester.rules.RuleGenerator;
 import com.yz8023.adguardtester.ui.ResultAdapter;
+import com.yz8023.adguardtester.util.Texts;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,60 +43,18 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import okhttp3.OkHttpClient;
 
 /**
  * AdGuard 规则测试器主界面。
  *
  * <p>流程：解析测试站点列表 → 真机探测哪些域名未被拦截 → 生成 AdGuard 补漏规则。
+ * 共享状态（目标/结果/引擎/线程池）在 {@link AppRuntime}，旋转屏后恢复界面。
  */
 public class MainActivity extends AppCompatActivity {
 
-    private static final String SRC1_NAME = "paileactivist/toolz";
-    private static final String SRC1_URL = "https://paileactivist.github.io/toolz/adblock.html";
-    private static final String SRC2_NAME = "mobileproxy.space";
-    private static final String SRC2_URL = "https://mobileproxy.space/ch/adblock-test.html";
-    private static final String SRC3_NAME = "Adblock Turtlecute";
-    private static final String SRC3_URL = "https://adblock.turtlecute.org/";
-    private static final String SRC4_NAME = "Super Adblock Test";
-    private static final String SRC4_URL = "https://superadblocktest.com/";
-    private static final String SRC5_NAME = "GetBlockify";
-    private static final String SRC5_URL = "https://getblockify.com/adblock-test";
-
-    private static final String[] SRC1_SCRIPTS = {"/resources/adblock/data.js"};
-    private static final String[] NO_SCRIPTS = {};
-    private static final String[] SRC3_SCRIPTS = {"/js/index.js"};
-    private static final String[] SRC4_SCRIPTS = {"/adblock.js"};
-
     private static final int REQUEST_SAVE_RULES = 1001;
-
-    private static final class SourceChoice {
-        final String name;
-        final String url;
-        final String[] scriptUrlFilters;
-
-        SourceChoice(String name, String url, String[] scriptUrlFilters) {
-            this.name = name;
-            this.url = url;
-            this.scriptUrlFilters = scriptUrlFilters;
-        }
-    }
-
-    private static final class SourceResult {
-        final List<TestTarget> targets;
-        final String failure;
-
-        SourceResult(List<TestTarget> targets, String failure) {
-            this.targets = targets;
-            this.failure = failure;
-        }
-    }
 
     private CheckBox cbSrc1;
     private CheckBox cbSrc2;
@@ -126,20 +90,15 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tvStatus;
 
-    private OkHttpClient http;
-    private SourceFetcher fetcher;
-    private ProbeEngine engine;
-    private ExecutorService fetchPool;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
-    private final List<TestTarget> targets = new ArrayList<>();
-    private final List<ProbeResult> results = new ArrayList<>();
     private ResultAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
+        applyWindowInsets();
 
         cbSrc1 = findViewById(R.id.cb_src1);
         cbSrc2 = findViewById(R.id.cb_src2);
@@ -175,8 +134,12 @@ public class MainActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btn_save);
         tvStatus = findViewById(R.id.tv_status);
 
-        etUrl1.setText(SRC1_URL);
-        etUrl2.setText(SRC2_URL);
+        if (etUrl1.getText().length() == 0) {
+            etUrl1.setText(Sources.SRC1_URL);
+        }
+        if (etUrl2.getText().length() == 0) {
+            etUrl2.setText(Sources.SRC2_URL);
+        }
 
         findViewById(R.id.btn_copy_src1).setOnClickListener(v ->
                 copyLink(R.string.source_link_copied, etUrl1.getText().toString().trim()));
@@ -184,82 +147,75 @@ public class MainActivity extends AppCompatActivity {
                 copyLink(R.string.source_link_copied,
                         SourceFetcher.canonicalizeKnownPageUrl(etUrl2.getText().toString())));
         findViewById(R.id.btn_copy_src3).setOnClickListener(v ->
-                copyLink(R.string.source_link_copied, SRC3_URL));
+                copyLink(R.string.source_link_copied, Sources.SRC3_URL));
         findViewById(R.id.btn_copy_src4).setOnClickListener(v ->
-                copyLink(R.string.source_link_copied, SRC4_URL));
+                copyLink(R.string.source_link_copied, Sources.SRC4_URL));
         findViewById(R.id.btn_copy_src5).setOnClickListener(v ->
-                copyLink(R.string.source_link_copied, SRC5_URL));
+                copyLink(R.string.source_link_copied, Sources.SRC5_URL));
 
-        adapter = new ResultAdapter(new ResultAdapter.LinkCopyListener() {
-            @Override
-            public void onCopyLink(String url) {
-                copyLink(R.string.target_link_copied, url);
-            }
-        });
+        adapter = new ResultAdapter(url -> copyLink(R.string.target_link_copied, url));
         rvResults.setLayoutManager(new LinearLayoutManager(this));
         rvResults.setAdapter(adapter);
         rvResults.setNestedScrollingEnabled(true);
 
-        http = new OkHttpClient.Builder()
-                .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
-                .readTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
-                .callTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
-                .followRedirects(true)
-                .build();
-        fetcher = new SourceFetcher(http);
-        engine = new ProbeEngine();
-        fetchPool = Executors.newFixedThreadPool(5);
+        btnParse.setOnClickListener(v -> parseSources());
+        btnStart.setOnClickListener(v -> startTest());
+        btnStop.setOnClickListener(v -> {
+            AppRuntime.get().engine.cancel();
+            setStatus(getString(R.string.status_stopping));
+        });
+        btnGenerate.setOnClickListener(v -> generateRules());
+        btnCopy.setOnClickListener(v -> copyRules());
+        btnShare.setOnClickListener(v -> shareRules());
+        btnSave.setOnClickListener(v -> saveRules());
 
-        btnParse.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                parseSources();
-            }
-        });
-        btnStart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startTest();
-            }
-        });
-        btnStop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                engine.cancel();
-                setStatus(getString(R.string.status_stopping));
-            }
-        });
-        btnGenerate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                generateRules();
-            }
-        });
-        btnCopy.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                copyRules();
-            }
-        });
-        btnShare.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                shareRules();
-            }
-        });
-        btnSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveRules();
-            }
+        restoreAfterRecreate();
+    }
+
+    /** targetSdk 35+ 强制 edge-to-edge：把系统栏 insets 转成根布局 padding。 */
+    private void applyWindowInsets() {
+        View root = findViewById(R.id.root_scroll);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars()
+                            | WindowInsetsCompat.Type.displayCutout()
+                            | WindowInsetsCompat.Type.ime());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
         });
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        engine.shutdown();
-        fetchPool.shutdownNow();
+    /** 旋转屏/进程内重建后恢复共享状态对应的界面。 */
+    private void restoreAfterRecreate() {
+        AppRuntime app = AppRuntime.get();
+        tvParseInfo.setText(app.lastParseNote);
+
+        if (app.engine.isRunning()) {
+            adapter.clear();
+            for (ProbeResult r : app.engine.snapshot()) {
+                app.results.add(r);
+                adapter.add(r);
+            }
+            lastProgressCount = Math.max(app.engine.progressDone(), app.results.size());
+            progressBar.setProgress(lastProgressCount * 1000
+                    / Math.max(1, app.engine.progressTotal()));
+            tvProgress.setText(getString(R.string.progress_text,
+                    lastProgressCount, app.engine.progressTotal()));
+            updateSummary();
+            setTestButtons(true);
+            setStatus(getString(R.string.status_testing));
+            app.engine.attach(new TestListener());
+        } else {
+            adapter.clear();
+            adapter.addAll(new ArrayList<>(app.results));
+            updateSummary();
+            btnParse.setEnabled(!app.parsing);
+            if (app.results.isEmpty()) {
+                setStatus(getString(R.string.status_idle));
+            } else {
+                setStatus(getString(R.string.status_tested));
+            }
+        }
     }
 
     // ------------------------------------------------------------------
@@ -267,107 +223,119 @@ public class MainActivity extends AppCompatActivity {
     // ------------------------------------------------------------------
 
     private void parseSources() {
-        final List<SourceChoice> sources = new ArrayList<>();
+        final List<Sources.Choice> sources = new ArrayList<>();
         if (cbSrc1.isChecked()) {
             String url = etUrl1.getText().toString().trim();
-            String[] scripts = SourceFetcher.canonicalizeKnownPageUrl(url).equalsIgnoreCase(SRC1_URL)
-                    ? SRC1_SCRIPTS : null;
-            sources.add(new SourceChoice(SRC1_NAME, url, scripts));
+            String[] scripts = SourceFetcher.canonicalizeKnownPageUrl(url)
+                    .equalsIgnoreCase(Sources.SRC1_URL)
+                    ? Sources.SRC1_SCRIPTS : null;
+            sources.add(new Sources.Choice(Sources.SRC1_NAME, url, scripts));
         }
         if (cbSrc2.isChecked()) {
             String url = etUrl2.getText().toString().trim();
-            String[] scripts = SourceFetcher.canonicalizeKnownPageUrl(url).equalsIgnoreCase(SRC2_URL)
-                    ? NO_SCRIPTS : null;
-            sources.add(new SourceChoice(SRC2_NAME, url, scripts));
+            String[] scripts = SourceFetcher.canonicalizeKnownPageUrl(url)
+                    .equalsIgnoreCase(Sources.SRC2_URL)
+                    ? Sources.NO_SCRIPTS : null;
+            sources.add(new Sources.Choice(Sources.SRC2_NAME, url, scripts));
         }
         if (cbSrc3.isChecked()) {
-            sources.add(new SourceChoice(SRC3_NAME, SRC3_URL, SRC3_SCRIPTS));
+            sources.add(new Sources.Choice(Sources.SRC3_NAME, Sources.SRC3_URL, Sources.SRC3_SCRIPTS));
         }
         if (cbSrc4.isChecked()) {
-            sources.add(new SourceChoice(SRC4_NAME, SRC4_URL, SRC4_SCRIPTS));
+            sources.add(new Sources.Choice(Sources.SRC4_NAME, Sources.SRC4_URL, Sources.SRC4_SCRIPTS));
         }
         if (cbSrc5.isChecked()) {
-            sources.add(new SourceChoice(SRC5_NAME, SRC5_URL, NO_SCRIPTS));
+            sources.add(new Sources.Choice(Sources.SRC5_NAME, Sources.SRC5_URL, Sources.NO_SCRIPTS));
         }
         if (cbSrcCustom.isChecked()) {
             String url = etUrlCustom.getText().toString().trim();
             if (!url.isEmpty()) {
-                sources.add(new SourceChoice("自定义", url, null));
+                sources.add(new Sources.Choice("自定义", url, null));
             }
         }
         if (sources.isEmpty()) {
             toast(getString(R.string.err_no_source));
             return;
         }
+        final AppRuntime app = AppRuntime.get();
+        if (app.parsing) {
+            toast(getString(R.string.status_parsing));
+            return;
+        }
+        app.parsing = true;
         btnParse.setEnabled(false);
         setStatus(getString(R.string.status_parsing));
         tvParseInfo.setText("");
 
-        fetchPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                final List<Future<SourceResult>> pending = new ArrayList<>();
-                for (final SourceChoice source : sources) {
-                    pending.add(fetchPool.submit(new Callable<SourceResult>() {
-                        @Override
-                        public SourceResult call() {
-                            try {
-                                SourceFetcher.FetchedSource fetched = fetcher.fetch(
-                                        source.name, source.url, source.scriptUrlFilters);
-                                SourceParser.ParsedList parsed = SourceParser.parseSource(
-                                        source.name, fetched.pageUrl, fetched.html, fetched.assetTexts);
-                                return new SourceResult(parsed.targets, null);
-                            } catch (IOException e) {
-                                return new SourceResult(new ArrayList<TestTarget>(),
-                                        source.name + "：抓取失败（" + shortMsg(e) + "）");
-                            } catch (RuntimeException e) {
-                                return new SourceResult(new ArrayList<TestTarget>(),
-                                        source.name + "：解析失败（" + shortMsg(e) + "）");
-                            }
-                        }
-                    }));
-                }
-
-                final Map<String, TestTarget> merged = new LinkedHashMap<>();
-                final List<String> notes = new ArrayList<>();
-                for (int i = 0; i < pending.size(); i++) {
+        final SourceFetcher fetcher = app.fetcher;
+        app.fetchPool.execute(() -> {
+            final List<Future<ParseOutcome>> pending = new ArrayList<>();
+            for (Sources.Choice source : sources) {
+                pending.add(app.fetchPool.submit(() -> {
                     try {
-                        SourceResult fetched = pending.get(i).get();
-                        if (fetched.failure != null) {
-                            notes.add(fetched.failure);
-                            continue;
-                        }
-                        int added = 0;
-                        for (TestTarget target : fetched.targets) {
-                            if (!merged.containsKey(target.host)) {
-                                merged.put(target.host, target);
+                        SourceFetcher.FetchedSource fetched =
+                                fetcher.fetch(source.name, source.url, source.scriptUrlFilters);
+                        SourceParser.ParsedList parsed = SourceParser.parseSource(
+                                source.name, fetched.pageUrl, fetched.html, fetched.assetTexts);
+                        return new ParseOutcome(parsed.targets, null);
+                    } catch (IOException e) {
+                        return new ParseOutcome(new ArrayList<>(),
+                                source.name + "：抓取失败（" + Texts.shortMsg(e, 60) + "）");
+                    } catch (RuntimeException e) {
+                        return new ParseOutcome(new ArrayList<>(),
+                                source.name + "：解析失败（" + Texts.shortMsg(e, 60) + "）");
+                    }
+                }));
+            }
+
+            final Map<String, TestTarget> merged = new LinkedHashMap<>();
+            final List<String> notes = new ArrayList<>();
+            for (int i = 0; i < pending.size(); i++) {
+                try {
+                    ParseOutcome outcome = pending.get(i).get();
+                    if (outcome.failure != null) {
+                        notes.add(outcome.failure);
+                        continue;
+                    }
+                    int added = 0;
+                    synchronized (app.targets) {
+                        for (TestTarget target : outcome.targets) {
+                            boolean exists = false;
+                            for (TestTarget t : app.targets) {
+                                if (t.host.equals(target.host)) {
+                                    exists = true;
+                                    break;
+                                }
+                            }
+                            if (!exists) {
+                                app.targets.add(target);
                                 added++;
                             }
                         }
-                        notes.add(sources.get(i).name + "：新增 " + added + " 个目标");
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        notes.add("抓取已中断");
-                        break;
-                    } catch (ExecutionException e) {
-                        Throwable cause = e.getCause() == null ? e : e.getCause();
-                        notes.add(sources.get(i).name + "：抓取失败（" + shortMsg(cause) + "）");
                     }
+                    notes.add(sources.get(i).name + "：新增 " + added + " 个目标");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    notes.add("抓取已中断");
+                    break;
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause() == null ? e : e.getCause();
+                    notes.add(sources.get(i).name + "：抓取失败（" + Texts.shortMsg(cause, 60) + "）");
                 }
-                final List<TestTarget> list = new ArrayList<>(merged.values());
-                final String note = join(notes, "\n");
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        targets.clear();
-                        targets.addAll(list);
-                        btnParse.setEnabled(true);
-                        tvParseInfo.setText(getString(R.string.parse_result, list.size(), note));
-                        setStatus(getString(list.isEmpty()
-                                ? R.string.status_no_targets : R.string.status_parsed));
-                    }
-                });
             }
+            final int total;
+            synchronized (app.targets) {
+                total = app.targets.size();
+            }
+            final String note = Texts.join(notes, "\n");
+            app.lastParseNote = note;
+            app.parsing = false;
+            mainHandler.post(() -> {
+                tvParseInfo.setText(getString(R.string.parse_result, total, note));
+                btnParse.setEnabled(true);
+                setStatus(getString(total == 0
+                        ? R.string.status_no_targets : R.string.status_parsed));
+            });
         });
     }
 
@@ -376,22 +344,25 @@ public class MainActivity extends AppCompatActivity {
     // ------------------------------------------------------------------
 
     private void startTest() {
-        if (engine.isRunning()) {
+        final AppRuntime app = AppRuntime.get();
+        if (app.engine.isRunning()) {
             toast(getString(R.string.err_running));
             return;
         }
         final List<TestTarget> toTest = new ArrayList<>();
         boolean withOem = cbOem.isChecked();
-        for (TestTarget t : targets) {
-            if (withOem || !t.isOem()) {
-                toTest.add(t);
+        synchronized (app.targets) {
+            for (TestTarget t : app.targets) {
+                if (withOem || !t.isOem()) {
+                    toTest.add(t);
+                }
             }
         }
         if (toTest.isEmpty()) {
             toast(getString(R.string.err_no_targets));
             return;
         }
-        results.clear();
+        app.results.clear();
         adapter.clear();
         updateSummary();
         lastProgressCount = 0;
@@ -400,43 +371,42 @@ public class MainActivity extends AppCompatActivity {
         setTestButtons(true);
         setStatus(getString(R.string.status_testing));
         ScrollView rootScroll = findViewById(R.id.root_scroll);
-        rootScroll.post(new Runnable() {
-            @Override
-            public void run() {
-                rootScroll.smoothScrollTo(0, tvSummary.getTop());
-            }
-        });
+        rootScroll.post(() -> rootScroll.smoothScrollTo(0, tvSummary.getTop()));
         final boolean useDoh = cbDoh.isChecked();
 
-        engine.start(toTest, useDoh, new ProbeEngine.Listener() {
-            @Override
-            public void onProgress(final ProbeResult result, final int done, final int total) {
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        results.add(result);
-                        adapter.add(result);
-                        updateSummary();
-                        lastProgressCount = Math.max(lastProgressCount, done);
-                        progressBar.setProgress(lastProgressCount * 1000 / total);
-                        tvProgress.setText(getString(R.string.progress_text, lastProgressCount, total));
-                    }
-                });
-            }
+        app.engine.start(toTest, useDoh, new TestListener());
+    }
 
-            @Override
-            public void onFinished(final List<ProbeResult> done) {
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        setTestButtons(false);
-                        setStatus(getString(R.string.status_tested));
-                        updateSummary();
-                        generateRules();
+    private final class TestListener implements ProbeEngine.Listener {
+        @Override
+        public void onProgress(ProbeResult result, int done, int total) {
+            mainHandler.post(() -> {
+                AppRuntime.get().results.add(result);
+                adapter.add(result);
+                updateSummary();
+                lastProgressCount = Math.max(lastProgressCount, done);
+                progressBar.setProgress(lastProgressCount * 1000 / total);
+                tvProgress.setText(getString(R.string.progress_text, lastProgressCount, total));
+            });
+        }
+
+        @Override
+        public void onFinished(List<ProbeResult> done) {
+            mainHandler.post(() -> {
+                setTestButtons(false);
+                boolean cancelled = false;
+                for (ProbeResult r : done) {
+                    if (r.status == ProbeStatus.CANCELLED) {
+                        cancelled = true;
+                        break;
                     }
-                });
-            }
-        });
+                }
+                setStatus(getString(cancelled
+                        ? R.string.status_cancelled : R.string.status_tested));
+                updateSummary();
+                generateRules();
+            });
+        }
     }
 
     private void updateSummary() {
@@ -444,6 +414,8 @@ public class MainActivity extends AppCompatActivity {
         int blocked = 0;
         int dead = 0;
         int unknown = 0;
+        int cancelled = 0;
+        List<ProbeResult> results = AppRuntime.get().results;
         for (ProbeResult r : results) {
             if (r.status == ProbeStatus.NOT_BLOCKED) {
                 unblocked++;
@@ -452,12 +424,14 @@ public class MainActivity extends AppCompatActivity {
                 blocked++;
             } else if (r.status == ProbeStatus.DEAD) {
                 dead++;
+            } else if (r.status == ProbeStatus.CANCELLED) {
+                cancelled++;
             } else {
                 unknown++;
             }
         }
         tvSummary.setText(getString(R.string.summary_text,
-                results.size(), unblocked, blocked, dead, unknown));
+                results.size(), unblocked, blocked, dead, unknown, cancelled));
     }
 
     // ------------------------------------------------------------------
@@ -469,7 +443,7 @@ public class MainActivity extends AppCompatActivity {
         o.important = cbImportant.isChecked();
         o.groupByCategory = cbGroup.isChecked();
         o.includeUnknown = cbUnknown.isChecked();
-        etRules.setText(RuleGenerator.generate(results, o));
+        etRules.setText(RuleGenerator.generate(AppRuntime.get().results, o));
         setStatus(getString(R.string.status_rules_ready));
     }
 
@@ -522,7 +496,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
+    @Deprecated
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != REQUEST_SAVE_RULES || resultCode != RESULT_OK || data == null) {
@@ -540,7 +514,7 @@ public class MainActivity extends AppCompatActivity {
             os.write(text.getBytes(StandardCharsets.UTF_8));
             toast(getString(R.string.saved));
         } catch (IOException e) {
-            toast(getString(R.string.err_save_failed) + "：" + shortMsg(e));
+            toast(getString(R.string.err_save_failed) + "：" + Texts.shortMsg(e, 60));
         }
     }
 
@@ -562,23 +536,13 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
     }
 
-    private static String shortMsg(Throwable e) {
-        String m = e.getMessage();
-        if (m == null || m.isEmpty()) {
-            return e.getClass().getSimpleName();
-        }
-        m = m.replace('\n', ' ');
-        return m.length() > 60 ? m.substring(0, 60) : m;
-    }
+    private static final class ParseOutcome {
+        final List<TestTarget> targets;
+        final String failure;
 
-    private static String join(List<String> parts, String sep) {
-        StringBuilder sb = new StringBuilder();
-        for (String p : parts) {
-            if (sb.length() > 0) {
-                sb.append(sep);
-            }
-            sb.append(p);
+        ParseOutcome(List<TestTarget> targets, String failure) {
+            this.targets = targets;
+            this.failure = failure;
         }
-        return sb.toString();
     }
 }

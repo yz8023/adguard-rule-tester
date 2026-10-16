@@ -269,6 +269,50 @@ public class SourceParserTest {
     }
 
     @Test
+    public void deeplyNestedLiteralDoesNotCrashParser() {
+        // 10 万层嵌套数组：远程恶意页面可构造；解析必须跳过该值而非抛 StackOverflowError。
+        StringBuilder sb = new StringBuilder("var x = ");
+        for (int i = 0; i < 100_000; i++) {
+            sb.append('[');
+        }
+        sb.append("\"ok.tracker.example.com\"]");
+        for (int i = 0; i < 100_000; i++) {
+            sb.append(']');
+        }
+        sb.append(';');
+        SourceParser.ParsedList parsed = SourceParser.parseSource(
+                "custom", "https://some.test/deep.html", sb.toString(), null);
+        // 深层字面量被拒绝后可能落入通用扫描；无论如何不允许 Error/异常抛出，且不崩溃。
+        assertNotNull(parsed);
+        for (TestTarget t : parsed.targets) {
+            assertFalse(t.host.isEmpty());
+        }
+    }
+
+    @Test
+    public void moderatelyNestedLiteralStillParses() {
+        // 合理深度（<64 层）的结构必须照常解析。
+        StringBuilder sb = new StringBuilder("var x = ");
+        for (int i = 0; i < 40; i++) {
+            sb.append('[');
+        }
+        sb.append("\"moderate.tracker.example.com\"");
+        for (int i = 0; i < 40; i++) {
+            sb.append(']');
+        }
+        sb.append(';');
+        SourceParser.ParsedList parsed = SourceParser.parseSource(
+                "custom", "https://some.test/ok.html", sb.toString(), null);
+        boolean found = false;
+        for (TestTarget t : parsed.targets) {
+            if (t.host.equals("moderate.tracker.example.com")) {
+                found = true;
+            }
+        }
+        assertTrue("40 层嵌套应照常解析", found);
+    }
+
+    @Test
     public void linkedScriptsResolveRelativeAndSkipNonHttp() {
         String html = "<script src=\"../lib/data.js\"></script>" +
                 "<script src=\"https://cdn.example.com/x.js\"></script>" +

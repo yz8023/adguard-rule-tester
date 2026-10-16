@@ -41,11 +41,12 @@
     <string name="status_testing">正在探测各域名是否被拦截…</string>
     <string name="status_stopping">正在停止…</string>
     <string name="status_tested">测试完成，已自动生成规则。</string>
+    <string name="status_cancelled">测试已取消；未测完的域名不会写入规则，可重新开始补测。</string>
     <string name="status_rules_ready">规则已生成。</string>
 
     <string name="parse_result">共 %1$d 个目标。\n%2$s</string>
     <string name="progress_text">已测试 %1$d / %2$d</string>
-    <string name="summary_text">共 %1$d 项 · 未拦截 %2$d · 已拦截 %3$d · 失效 %4$d · 未知 %5$d</string>
+    <string name="summary_text">共 %1$d 项 · 未拦截 %2$d · 已拦截 %3$d · 失效 %4$d · 未知 %5$d · 取消 %6$d</string>
 
     <string name="copied">规则已复制到剪贴板</string>
     <string name="saved">已保存</string>

@@ -29,7 +29,7 @@ public final class DohVerifier {
         ERROR
     }
 
-    private static final String[] RESOLVERS = {
+    static final String[] DEFAULT_RESOLVERS = {
             "https://dns.google/resolve?name=",
             "https://cloudflare-dns.com/dns-query?name=",
     };
@@ -38,10 +38,17 @@ public final class DohVerifier {
     private static final Pattern ANSWER = Pattern.compile("\"Answer\"\\s*:\\s*\\[");
 
     private final OkHttpClient client;
+    private final String[] resolvers;
     private final ConcurrentMap<String, Verdict> cache = new ConcurrentHashMap<>();
 
     public DohVerifier(OkHttpClient client) {
+        this(client, DEFAULT_RESOLVERS);
+    }
+
+    /** 注入自定义 resolver 前缀（单测用；生产代码走默认公共 DoH）。 */
+    DohVerifier(OkHttpClient client, String[] resolvers) {
         this.client = client;
+        this.resolvers = resolvers;
     }
 
     public Verdict verify(String host) {
@@ -53,13 +60,16 @@ public final class DohVerifier {
             return cached;
         }
         Verdict result = Verdict.ERROR;
-        for (String resolver : RESOLVERS) {
+        for (String resolver : resolvers) {
             result = query(resolver + host + "&type=A", host);
             if (result != Verdict.ERROR) {
                 break;
             }
         }
-        cache.put(host, result);
+        // ERROR 不缓存：DoH 一次抖动不应让该域名整个会话都停留“无法验证”。
+        if (result != Verdict.ERROR) {
+            cache.put(host, result);
+        }
         return result;
     }
 

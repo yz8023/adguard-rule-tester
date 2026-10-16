@@ -11,7 +11,9 @@ public enum ProbeStatus {
     /** 公共 DoH 也查无此域名——域名本身已失效。 */
     DEAD("域名失效"),
     /** 无法完成验证（如 DoH 不可达），不写入规则。 */
-    UNKNOWN("无法验证");
+    UNKNOWN("无法验证"),
+    /** 用户中途取消，该目标根本没测过——绝不允许写入规则。 */
+    CANCELLED("已取消");
 
     public final String label;
 

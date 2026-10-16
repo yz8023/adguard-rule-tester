@@ -31,9 +31,9 @@ android {
     defaultConfig {
         applicationId 'com.yz8023.adguardtester'
         minSdk 29
-        targetSdk 34
-        versionCode 3
-        versionName "1.2.0"
+        targetSdk 36
+        versionCode 4
+        versionName "1.3.0"
         resourceConfigurations += ['zh', 'en']
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -69,4 +69,5 @@ dependencies {
     implementation libs.okhttp
 
     testImplementation libs.junit
+    testImplementation libs.mockwebserver
 }
