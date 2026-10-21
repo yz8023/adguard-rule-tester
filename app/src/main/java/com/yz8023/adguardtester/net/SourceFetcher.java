@@ -109,18 +109,22 @@ public final class SourceFetcher {
     public FetchedSource fetch(String name, String pageUrl, String[] scriptUrlFilters) throws IOException {
         String canonicalPageUrl = canonicalizeKnownPageUrl(pageUrl);
         String html = null;
+        boolean needChallengeResolve = false;
         try {
             html = get(canonicalPageUrl, MAX_PAGE_BYTES);
+            if (isSecurityVerificationPage(canonicalPageUrl, html)) {
+                needChallengeResolve = true;
+            }
         } catch (IOException e) {
+            needChallengeResolve = true;
+        }
+
+        if (needChallengeResolve) {
             if (challengeResolver != null) {
                 return challengeResolver.resolve(name, canonicalPageUrl, scriptUrlFilters);
             }
-            throw e;
-        }
-
-        if (isSecurityVerificationPage(html)) {
-            if (challengeResolver != null) {
-                return challengeResolver.resolve(name, canonicalPageUrl, scriptUrlFilters);
+            if (html == null) {
+                throw new IOException("无法连接至测试站点，且未配置过盾解算器");
             }
             throw new IOException("站点要求浏览器安全验证（Cloudflare）；请使用内置过盾引擎或在浏览器中打开");
         }
@@ -151,23 +155,45 @@ public final class SourceFetcher {
         return new FetchedSource(name, canonicalPageUrl, html, texts);
     }
 
-    /** 检测反自动化/Cloudflare 安全验证页。 */
+    /** 检测特定 URL 及其返回 HTML 是否处于 Cloudflare / 安全验证拦截状态。 */
+    public static boolean isSecurityVerificationPage(String url, String html) {
+        if (html == null || html.trim().isEmpty()) {
+            return true;
+        }
+        // 如果包含核心测试对象，说明是真实测试页
+        if (html.contains("const AdBlockTest") || html.contains("AdBlockTest =") || html.contains("HOST_TESTS")) {
+            return false;
+        }
+        // mobileproxy.space 特征：必须包含 AdBlockTest 才是有效页，否则就是 CF 挑战/拦截页
+        if (url != null && url.contains("mobileproxy.space") && !html.contains("AdBlockTest")) {
+            return true;
+        }
+        return isSecurityVerificationPage(html);
+    }
+
+    /** 检测反自动化/Cloudflare 安全验证页特征。 */
     public static boolean isSecurityVerificationPage(String html) {
         if (html == null || html.isEmpty()) {
+            return false;
+        }
+        // 核心测试数据优先排除
+        if (html.contains("const AdBlockTest") || html.contains("AdBlockTest =") || html.contains("HOST_TESTS")) {
             return false;
         }
         String lower = html.toLowerCase(Locale.ROOT);
         return html.contains("正在进行安全验证")
                 || html.contains("验证您不是自动程序")
-                || lower.contains("security verification")
-                || lower.contains("verify you are human")
-                || lower.contains("checking your browser")
+                || lower.contains("challenge-form")
                 || lower.contains("challenge-platform")
+                || lower.contains("cf-browser-verification")
                 || lower.contains("cf-chl-widget")
-                || lower.contains("challenges.cloudflare.com")
-                || lower.contains("cf-turnstile")
+                || lower.contains("id=\"challenge-stage\"")
+                || lower.contains("id=\"challenge-running\"")
                 || (lower.contains("just a moment") && lower.contains("cloudflare"))
-                || (lower.contains("attention required") && lower.contains("cloudflare"));
+                || (lower.contains("attention required") && lower.contains("cloudflare"))
+                || (lower.contains("security verification") && !lower.contains("adblock"))
+                || (lower.contains("verify you are human") && !lower.contains("adblock"))
+                || (lower.contains("checking your browser") && lower.contains("cloudflare"));
     }
 
     /** 修复已知移动端测试页的大小写/空格别名，避免把畸形路径发给站点。 */

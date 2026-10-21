@@ -59,15 +59,16 @@ public class SourceFetcherTest {
     public void detectsSecurityVerificationPage() {
         String verification1 = "<html><h1>正在进行安全验证</h1>"
                 + "本网站使用安全服务防护恶意自动程序。在验证您不是自动程序期间，将显示此页面。</html>";
-        String verification2 = "<html><script src=\"https://challenges.cloudflare.com/turnstile/v0/api.js\"></script></html>";
+        String verification2 = "<html><form id=\"challenge-form\"></form></html>";
         String verification3 = "<html><title>Just a moment...</title><body>Checking your browser before accessing cloudflare...</body></html>";
 
         assertTrue(SourceFetcher.isSecurityVerificationPage(verification1));
         assertTrue(SourceFetcher.isSecurityVerificationPage(verification2));
         assertTrue(SourceFetcher.isSecurityVerificationPage(verification3));
 
+        // 真实测试页（即便包含某些 Turnstile 引用但含 AdBlockTest）不属于拦截验证页
         assertFalse(SourceFetcher.isSecurityVerificationPage(
-                "<html><title>AdBlock test</title><body>ready</body></html>"));
+                "<html><title>AdBlock test</title><body><script>const AdBlockTest = {};</script></body></html>"));
     }
 
     @Test
@@ -103,7 +104,7 @@ public class SourceFetcherTest {
     @Test
     public void sendsRememberedCookieAndCustomUserAgent() throws Exception {
         String pageUrl = server.url("/test.html").toString();
-        server.enqueue(new MockResponse().setBody("<html><body>normal page</body></html>"));
+        server.enqueue(new MockResponse().setBody("<html><body><script>const AdBlockTest={};</script></body></html>"));
 
         String host = server.getHostName();
         fetcher.setCookie(host, "cf_clearance=abc123token; __cf_bm=bm456");

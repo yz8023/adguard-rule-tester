@@ -289,6 +289,9 @@ public class MainActivity extends AppCompatActivity {
             toast(getString(R.string.status_parsing));
             return;
         }
+        synchronized (app.targets) {
+            app.targets.clear();
+        }
         app.parsing = true;
         btnParse.setEnabled(false);
         setStatus(getString(R.string.status_parsing));
@@ -315,7 +318,6 @@ public class MainActivity extends AppCompatActivity {
                 }));
             }
 
-            final Map<String, TestTarget> merged = new LinkedHashMap<>();
             final List<String> notes = new ArrayList<>();
             for (int i = 0; i < pending.size(); i++) {
                 try {

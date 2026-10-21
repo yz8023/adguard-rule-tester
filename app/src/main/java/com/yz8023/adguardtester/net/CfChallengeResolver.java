@@ -24,8 +24,12 @@ import com.yz8023.adguardtester.R;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -39,15 +43,16 @@ import java.util.concurrent.atomic.AtomicReference;
  * 1. 当 OkHttp 遇到 Cloudflare 5秒盾/Turnstile/安全验证（HTTP 403/503 或验证页特征）时触发；
  * 2. 在主线程创建 WebView，开启完整 JavaScript/DOM/Cookie 容器执行 Cloudflare 客户端验证挑战；
  * 3. 注入辅助脚本定时轮询挑战状态，自动触发 Turnstile 确认；
- * 4. 若验证需要手动交互或耗时超过 2 秒，自动浮出对话框供用户一键点选验证码；
+ * 4. 若验证需要手动交互或耗时超过 1.5 秒，自动浮出对话框供用户一键点选验证码；
  * 5. 验证通过后自动捕获已解算的页面 HTML 与 {@code cf_clearance} 等 Cookie，
- *    同步回 {@link SourceFetcher} 供后续请求复用，并自动关闭对话框。
+ *    同步回 {@link SourceFetcher} 供后续请求复用，并自动关闭对话框；
+ * 6. 若网络异常或用户取消，提供内置快照兜底，确保规则抓取不中断。
  */
 public final class CfChallengeResolver implements SourceFetcher.ChallengeResolver {
 
     private static final long TIMEOUT_SECONDS = 30;
-    private static final long DIALOG_DELAY_MS = 2000;
-    private static final long POLL_INTERVAL_MS = 400;
+    private static final long DIALOG_DELAY_MS = 1500;
+    private static final long POLL_INTERVAL_MS = 350;
 
     private final SourceFetcher fetcher;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -87,11 +92,23 @@ public final class CfChallengeResolver implements SourceFetcher.ChallengeResolve
             boolean completed = latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (!completed) {
                 mainHandler.post(() -> finished.set(true));
-                throw new IOException("Cloudflare 验证超时（" + TIMEOUT_SECONDS + " 秒）；请检查网络或重试");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Cloudflare 验证已中断");
+        }
+
+        String html = resolvedHtml.get();
+        if (html != null && !html.isEmpty() && !SourceFetcher.isSecurityVerificationPage(pageUrl, html)) {
+            return fetcher.fetchWithHtml(name, pageUrl, html, scriptUrlFilters);
+        }
+
+        // 尝试从本地 assets 快照兜底（例如 mobileproxy.html）
+        Activity activity = activityRef != null ? activityRef.get() : null;
+        if (activity != null) {
+            String fallback = loadFallbackAsset(activity, pageUrl);
+            if (fallback != null && !fallback.isEmpty()) {
+                return new SourceFetcher.FetchedSource(name, pageUrl, fallback, Collections.emptyList());
+            }
         }
 
         if (failure.get() != null) {
@@ -102,12 +119,7 @@ public final class CfChallengeResolver implements SourceFetcher.ChallengeResolve
             throw new IOException("Cloudflare 验证失败：" + err.getMessage(), err);
         }
 
-        String html = resolvedHtml.get();
-        if (html == null || html.isEmpty()) {
-            throw new IOException("未能通过 Cloudflare 验证获取有效页面内容");
-        }
-
-        return fetcher.fetchWithHtml(name, pageUrl, html, scriptUrlFilters);
+        throw new IOException("Cloudflare 验证超时；请重试或检查网络");
     }
 
     private void startSolving(final String name, final String pageUrl, final String[] scriptUrlFilters,
@@ -186,7 +198,7 @@ public final class CfChallengeResolver implements SourceFetcher.ChallengeResolve
             }
         };
 
-        // 2 秒后若仍未解决且 Activity 正常，显示带有 WebView 的过盾对话框
+        // 1.5 秒后若仍处于挑战状态且 Activity 正常，显示带有 WebView 的过盾对话框
         Runnable showDialogTask = () -> {
             if (finished.get()) {
                 return;
@@ -237,11 +249,12 @@ public final class CfChallengeResolver implements SourceFetcher.ChallengeResolve
                     raw = new JSONObject("{\"d\":" + raw + "}").getString("d");
                 }
                 JSONObject obj = new JSONObject(raw);
-                boolean isChallenge = obj.optBoolean("isChallenge", true);
-                boolean hasData = obj.optBoolean("hasData", false);
+                boolean inCfChallenge = obj.optBoolean("inCfChallenge", true);
+                boolean hasTargetData = obj.optBoolean("hasTargetData", false);
                 String html = obj.optString("html", "");
 
-                if (hasData || (!isChallenge && html.length() > 5000)) {
+                // 必须明确获得目标数据且脱离 CF 拦截状态
+                if (hasTargetData && !inCfChallenge) {
                     if (finished.compareAndSet(false, true)) {
                         resolvedHtml.set(html);
                         // 提取并保存 Cookie
@@ -268,21 +281,34 @@ public final class CfChallengeResolver implements SourceFetcher.ChallengeResolve
                 "    var html = document.documentElement ? document.documentElement.outerHTML : '';" +
                 "    var text = document.body ? (document.body.innerText || '') : '';" +
                 "    var title = document.title || '';" +
-                "    var isChallenge = html.indexOf('challenge-platform') !== -1" +
+                "    var url = window.location.href || '';" +
+                "    " +
+                "    var inCfChallenge = title.indexOf('Just a moment') !== -1" +
+                "      || title.indexOf('Attention Required') !== -1" +
+                "      || title.indexOf('Cloudflare') !== -1" +
+                "      || title.indexOf('安全验证') !== -1" +
+                "      || document.getElementById('challenge-stage') !== null" +
+                "      || document.getElementById('challenge-form') !== null" +
+                "      || document.getElementById('challenge-running') !== null" +
+                "      || document.getElementById('cf-wrapper') !== null" +
+                "      || document.querySelector('.cf-browser-verification') !== null" +
+                "      || html.indexOf('challenge-platform') !== -1" +
+                "      || html.indexOf('cf-browser-verification') !== -1" +
                 "      || html.indexOf('正在进行安全验证') !== -1" +
                 "      || html.indexOf('验证您不是自动程序') !== -1" +
-                "      || text.indexOf('Just a moment') !== -1" +
-                "      || text.indexOf('Checking your browser') !== -1" +
-                "      || title.indexOf('Just a moment') !== -1" +
-                "      || title.indexOf('Cloudflare') !== -1;" +
-                "    var hasData = html.indexOf('AdBlockTest') !== -1" +
+                "      || (text.indexOf('Just a moment') !== -1 && text.indexOf('Cloudflare') !== -1);" +
+                "    " +
+                "    var hasTargetData = html.indexOf('AdBlockTest') !== -1" +
                 "      || html.indexOf('HOST_TESTS') !== -1" +
-                "      || html.indexOf('itemprop=\"name\"') !== -1" +
-                "      || (html.length > 5000 && !isChallenge);" +
+                "      || (url.indexOf('mobileproxy.space') !== -1 && html.indexOf('AdBlockTest') !== -1)" +
+                "      || (!inCfChallenge && html.indexOf('itemprop=\"name\"') !== -1)" +
+                "      || (!inCfChallenge && text.indexOf('Check your AdBlock') !== -1 && html.length > 50000);" +
+                "    " +
                 "    return JSON.stringify({" +
-                "      isChallenge: isChallenge," +
-                "      hasData: hasData," +
+                "      inCfChallenge: inCfChallenge," +
+                "      hasTargetData: hasTargetData," +
                 "      title: title," +
+                "      url: url," +
                 "      length: html.length," +
                 "      html: html" +
                 "    });" +
@@ -327,7 +353,7 @@ public final class CfChallengeResolver implements SourceFetcher.ChallengeResolve
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 super.onProgressChanged(view, newProgress);
-                if (newProgress >= 80 && !finished.get()) {
+                if (newProgress >= 70 && !finished.get()) {
                     view.evaluateJavascript(checkJs, evalCallback);
                 }
             }
@@ -335,5 +361,29 @@ public final class CfChallengeResolver implements SourceFetcher.ChallengeResolve
 
         mainHandler.postDelayed(pollTask, POLL_INTERVAL_MS);
         webView.loadUrl(pageUrl);
+    }
+
+    private static String loadFallbackAsset(Context context, String pageUrl) {
+        if (context == null || pageUrl == null) {
+            return null;
+        }
+        String assetName = null;
+        if (pageUrl.contains("mobileproxy.space")) {
+            assetName = "sources/mobileproxy.html";
+        }
+        if (assetName == null) {
+            return null;
+        }
+        try (InputStream is = context.getAssets().open(assetName)) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = is.read(buf)) != -1) {
+                baos.write(buf, 0, len);
+            }
+            return baos.toString(StandardCharsets.UTF_8.name());
+        } catch (Exception ignore) {
+            return null;
+        }
     }
 }
