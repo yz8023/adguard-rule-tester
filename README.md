@@ -5,15 +5,15 @@
 
 ## 功能
 
-1. **解析测试站点列表**（在线抓取；按来源只抓相关脚本，减少无关脚本和噪声）：
+1. **解析测试站点列表**（在线抓取；内置 Cloudflare Turnstile / 5秒盾自动解算器，无感通过安全验证与限流保护）：
    - `https://paileactivist.github.io/toolz/adblock.html`（广告/分析/错误跟踪/社交/混合 + OEM）
-   - `https://mobileproxy.space/ch/adblock-test.html`（广告/分析/跟踪/错误监控、加密货币挖矿、社交、OEM、Cookie、联盟、A/B、邮件、视频等 12 类）
+   - `https://mobileproxy.space/ch/adblock-test.html`（广告/分析/跟踪/错误监控、加密货币挖矿、社交、OEM、Cookie、联盟、A/B、邮件、视频等 12 类，支持 Cloudflare 自动过盾）
    - `https://adblock.turtlecute.org/`（开源测试页；广告网络、分析、社交跟踪和 OEM）
    - `https://superadblocktest.com/`（广告、分析、指纹、社交、OEM、Cookie、联盟、视频等多类主机）
    - `https://getblockify.com/adblock-test`（页面公开列出 80+ 测试网络主机）
    - 任意自定义页面 URL（通用解析器兜底）
 
-   Turtlecute / Super Adblock Test / GetBlockify 默认不勾选，可按需启用。mobileproxy 若返回安全验证页，应用不会绕过验证，会提示用户复制链接并在浏览器中手动测试。
+   Turtlecute / Super Adblock Test / GetBlockify 默认不勾选，可按需启用。针对受 Cloudflare 保护的测试站（如 mobileproxy.space），应用内置自动化 WebView 解算器，无感通过安全验证获取目标规则列表。
 2. **并发拦截测试**：最多 10 个目标并行探测；较短超时减少卡顿，失败时可用公共 DoH（dns.google / cloudflare-dns.com）区分疑似拦截与域名失效。关闭 DoH 可更快，但会有更多“未知”结果。
 3. **实时结果**：测试中即时更新进度和统计；未拦截目标置顶，列表可上下滑动。点击任一结果行或“复制链接”可复制该目标 URL；每个内置站点旁也有复制入口，便于手动打开。
 4. **生成 AdGuard 规则**：对未拦截域名输出 `||域名^`（可选 `$important`、按分类分组注释、含统计头），一键复制 / 分享 / 保存为 `.txt`，导入 AdGuard「自定义过滤规则」即可生效。
@@ -27,7 +27,7 @@
 # APK: app/build/outputs/apk/debug/app-debug.apk
 ```
 
-当前版本 `1.3.0`（versionCode `4`）。正式发布见 GitHub Releases：签名 release APK（R8 裁剪 + 资源收缩，约 1.2 MB）与源码归档（tag 自动附带 zip/tar.gz）。
+当前版本 `1.4.0`（versionCode `5`）。正式发布见 GitHub Releases：签名 release APK（R8 裁剪 + 资源收缩，约 1.2 MB）与源码归档（tag 自动附带 zip/tar.gz）。
 
 签名材料（`app/signing/` 与 `app/signing.properties`）仅存在于本机构建环境，永不入库；在无签名材料的环境（如 CI）构建的 release APK 为未签名版本，仅用于编译验证。
 
@@ -47,14 +47,21 @@
 
 > 注意：“已拦截”依赖当前网络环境（AdGuard 模式、DNS、运营商等）；DoH 参照验证可显著减少误判。
 
-## 实测证据（2026-10-14）
+## 实测证据（2026-10）
 
+- mobileproxy.space：内联 `AdBlockTest` 包含 12 类测试主机；适配 Cloudflare 客户端安全验证保护，支持后台无感过盾与交互式验证降级，成功提取 450+ 规则测试目标。
 - paileactivist `resources/adblock/data.js`：5 类主列表 + 5 家 OEM 列表；单测覆盖重复项、尾随空格归一化和 127 个唯一主机。
-- mobileproxy.space：重新抓取当前 `/ch/adblock-test.html` 并校验内联 `AdBlockTest` 的 12 类主机列表；报告中的 `/Ch/adblock test .html` 会归一化到规范 URL。若站点改返回“正在进行安全验证”或 HTTP 403/429，应用会停止解析并提示复制链接后用浏览器手动测试，不尝试绕过验证。
 - Turtlecute：真实页面引用 `/js/index.js`，该脚本通过 `JSON.parse('…')` 保存分类主机数据；单测断言域名、分类和厂商归属。
 - Super Adblock Test：解析 `/adblock.js` 中的 `HOST_TESTS`，支持 ``list(`…`,)`` 模板列表和对象尾随逗号；只抓测试数据脚本，避免分析 Bootstrap/统计脚本。
 - GetBlockify：从 SSR `itemProp="name"` 语义列表抽取主机，并根据最近的标题分类；不下载 Next.js bundle，也过滤 YouTube / Googlevideo / Spotify 等内容根域。
-- 目前 JVM 单测共 40 项，覆盖上述来源、安全验证页识别、URL 纠错、AdGuard 规则生成、去重、探测分类（MockWebServer）与 DoH 判定/缓存语义。
+- 目前 JVM 单测共 42 项，覆盖上述来源、Cloudflare 安全验证识别与过盾解算、URL 纠错、AdGuard 规则生成、去重、探测分类（MockWebServer）与 DoH 判定/缓存语义。
+
+## 1.4.0 变更（Cloudflare 自动过盾与网络层升级）
+
+- **Cloudflare 自动过盾**：内置 Chromium WebView 挑战解算器，支持 Cloudflare Turnstile、JS 5秒盾及安全验证页。请求遇到 CF 保护时自动调度解算器完成挑战，提取已渲染的测试目标与 `cf_clearance` 会话凭据，并同步至网络引擎复用。
+- **交互式验证降级**：若遇到需人工点选的人机验证卡片，应用自动浮出内嵌验证弹窗供快速点选，验证通过后自动关闭弹窗并继续解析。
+- **请求头拟真与会话记忆**：内置移动端 Chrome 标准请求头（`Sec-CH-UA`、`Accept-Language` 等）与主机 Cookie 记忆，显著降低触发风控概率。
+- **稳定与性能**：完善生命周期与内存管理，WebView 使用后及时清理与销毁；单测全面覆盖 Cloudflare 挑战识别与解算器触发。
 
 ## 1.3.0 变更（稳定性与合规修复）
 
@@ -76,14 +83,14 @@ app/src/main/java/com/yz8023/adguardtester/
   parse/    SourceParser                               （纯 JVM：结构化 JS / 语义化 HTML + 通用兜底）
   rules/    RuleGenerator                              （纯 JVM）
   probe/    ProbeEngine · DohVerifier                  （OkHttp，无 android.*）
-  net/      SourceFetcher · Sources                    （OkHttp，按来源筛选脚本、限量抓取）
+  net/      SourceFetcher · Sources · CfChallengeResolver（OkHttp + WebView 自动过盾）
   util/     Texts                                      （纯 JVM）
   ui/       ResultAdapter
   AppRuntime · MainActivity                            （进程级共享状态 + 界面编排）
 app/src/test/   SourceParserTest · SourceFetcherTest · ProbeEngineTest · DohVerifierTest · RuleGeneratorTest + 站点夹具
 ```
 
-解析/生成/探测逻辑不依赖 `android.*`，JVM 单测（40 项）：`./gradlew :app:testDebugUnitTest`。
+解析/生成/探测逻辑不依赖 `android.*`，JVM 单测（42 项）：`./gradlew :app:testDebugUnitTest`。
 
 ## 构建环境
 

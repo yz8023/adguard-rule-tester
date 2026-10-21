@@ -3,9 +3,9 @@
     <string name="app_name">AdGuard规则测试器</string>
 
     <string name="section_sources">1 · 测试站点列表</string>
-    <string name="source_update_note">版本 %1$s · 10 路并发 · 未拦截结果置顶 · 点击结果复制链接（新增测试源在下方）</string>
+    <string name="source_update_note">版本 %1$s · 10 路并发 · 未拦截结果置顶 · 支持 Cloudflare 自动过盾（新增测试源在下方）</string>
     <string name="src1_label">paileactivist/toolz（广告/分析/跟踪/OEM）</string>
-    <string name="src2_label">mobileproxy.space（广告/分析/跟踪等 12 类）</string>
+    <string name="src2_label">mobileproxy.space（广告/分析/跟踪等 12 类，支持CF过盾）</string>
     <string name="src3_label">Adblock Turtlecute（广告/分析/社交/OEM，开源）</string>
     <string name="src4_label">Super Adblock Test（约 470 个多类主机）</string>
     <string name="src5_label">GetBlockify（80+ 网络主机）</string>
@@ -35,14 +35,18 @@
     <string name="btn_save">保存文件</string>
 
     <string name="status_idle">就绪：先解析测试列表，再开始测试。</string>
-    <string name="status_parsing">正在抓取并解析测试站点…</string>
+    <string name="status_parsing">正在抓取并解析测试站点（支持自动过 Cloudflare 验证）…</string>
     <string name="status_parsed">解析完成，可以开始测试。</string>
-    <string name="status_no_targets">未获得测试目标；查看来源提示，安全验证页请复制链接后用浏览器手动测试。</string>
+    <string name="status_no_targets">未获得测试目标；请检查网络或重新解析。</string>
     <string name="status_testing">正在探测各域名是否被拦截…</string>
     <string name="status_stopping">正在停止…</string>
     <string name="status_tested">测试完成，已自动生成规则。</string>
     <string name="status_cancelled">测试已取消；未测完的域名不会写入规则，可重新开始补测。</string>
     <string name="status_rules_ready">规则已生成。</string>
+
+    <string name="cf_challenge_title">🛡️ Cloudflare 安全验证</string>
+    <string name="cf_challenge_message">正在自动通过 Cloudflare 盾保护；若出现验证码卡片请点击完成验证…</string>
+    <string name="btn_cancel">取消</string>
 
     <string name="parse_result">共 %1$d 个目标。\n%2$s</string>
     <string name="progress_text">已测试 %1$d / %2$d</string>

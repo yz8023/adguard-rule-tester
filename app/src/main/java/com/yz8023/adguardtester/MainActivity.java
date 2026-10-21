@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.yz8023.adguardtester.model.ProbeResult;
 import com.yz8023.adguardtester.model.ProbeStatus;
 import com.yz8023.adguardtester.model.TestTarget;
+import com.yz8023.adguardtester.net.CfChallengeResolver;
 import com.yz8023.adguardtester.net.SourceFetcher;
 import com.yz8023.adguardtester.net.Sources;
 import com.yz8023.adguardtester.parse.SourceParser;
@@ -49,7 +50,7 @@ import java.util.concurrent.Future;
 /**
  * AdGuard 规则测试器主界面。
  *
- * <p>流程：解析测试站点列表 → 真机探测哪些域名未被拦截 → 生成 AdGuard 补漏规则。
+ * <p>流程：解析测试站点列表（支持 Cloudflare 自动过盾）→ 真机探测哪些域名未被拦截 → 生成 AdGuard 补漏规则。
  * 共享状态（目标/结果/引擎/线程池）在 {@link AppRuntime}，旋转屏后恢复界面。
  */
 public class MainActivity extends AppCompatActivity {
@@ -99,6 +100,14 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
         applyWindowInsets();
+
+        // 绑定 Cloudflare 自动过盾解算器
+        SourceFetcher fetcher = AppRuntime.get().fetcher;
+        if (fetcher.getChallengeResolver() instanceof CfChallengeResolver) {
+            ((CfChallengeResolver) fetcher.getChallengeResolver()).attachActivity(this);
+        } else {
+            fetcher.setChallengeResolver(new CfChallengeResolver(fetcher, this));
+        }
 
         cbSrc1 = findViewById(R.id.cb_src1);
         cbSrc2 = findViewById(R.id.cb_src2);
@@ -170,6 +179,24 @@ public class MainActivity extends AppCompatActivity {
         btnSave.setOnClickListener(v -> saveRules());
 
         restoreAfterRecreate();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        SourceFetcher fetcher = AppRuntime.get().fetcher;
+        if (fetcher != null && fetcher.getChallengeResolver() instanceof CfChallengeResolver) {
+            ((CfChallengeResolver) fetcher.getChallengeResolver()).attachActivity(this);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        SourceFetcher fetcher = AppRuntime.get().fetcher;
+        if (fetcher != null && fetcher.getChallengeResolver() instanceof CfChallengeResolver) {
+            ((CfChallengeResolver) fetcher.getChallengeResolver()).detachActivity();
+        }
     }
 
     /** targetSdk 35+ 强制 edge-to-edge：把系统栏 insets 转成根布局 padding。 */

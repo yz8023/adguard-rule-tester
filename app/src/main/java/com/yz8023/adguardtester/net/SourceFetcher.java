@@ -3,8 +3,13 @@ package com.yz8023.adguardtester.net;
 import com.yz8023.adguardtester.parse.SourceParser;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -13,6 +18,7 @@ import okhttp3.ResponseBody;
 
 /**
  * 抓取测试页面与其外链脚本（纯 JVM，OkHttp，无 android.* 依赖）。
+ * 支持浏览器拟真请求头、Cookie 记忆、Cloudflare 安全验证识别与自动过盾解算器回调。
  */
 public final class SourceFetcher {
 
@@ -31,14 +37,63 @@ public final class SourceFetcher {
         }
     }
 
+    /** 挑战/安全验证解算器接口（在 Android 环境下由 WebView 解算器实现）。 */
+    public interface ChallengeResolver {
+        /**
+         * 尝试解算受 Cloudflare/安全验证保护的页面，并返回解算后的 HTML 与脚本资源。
+         */
+        FetchedSource resolve(String name, String pageUrl, String[] scriptUrlFilters) throws IOException;
+    }
+
+    public static final String DEFAULT_USER_AGENT =
+            "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
+
     private static final int MAX_ASSETS = 12;
     private static final long MAX_PAGE_BYTES = 4 * 1024 * 1024;
     private static final long MAX_ASSET_BYTES = 2 * 1024 * 1024;
 
     private final OkHttpClient client;
+    private final ConcurrentMap<String, String> hostCookies = new ConcurrentHashMap<>();
+    private volatile String userAgent = DEFAULT_USER_AGENT;
+    private volatile ChallengeResolver challengeResolver;
 
     public SourceFetcher(OkHttpClient client) {
         this.client = client;
+    }
+
+    public void setChallengeResolver(ChallengeResolver resolver) {
+        this.challengeResolver = resolver;
+    }
+
+    public ChallengeResolver getChallengeResolver() {
+        return this.challengeResolver;
+    }
+
+    public void setUserAgent(String ua) {
+        if (ua != null && !ua.trim().isEmpty()) {
+            this.userAgent = ua.trim();
+        }
+    }
+
+    public String getUserAgent() {
+        return this.userAgent;
+    }
+
+    public void setCookie(String host, String cookie) {
+        if (host != null && cookie != null) {
+            hostCookies.put(host.toLowerCase(Locale.ROOT), cookie);
+        }
+    }
+
+    public String getCookie(String host) {
+        if (host == null) {
+            return null;
+        }
+        return hostCookies.get(host.toLowerCase(Locale.ROOT));
+    }
+
+    public void clearCookies() {
+        hostCookies.clear();
     }
 
     /** 抓取页面 HTML，并顺带抓取同页引用的 &lt;script src&gt; 文本（限量）。 */
@@ -49,13 +104,33 @@ public final class SourceFetcher {
     /**
      * 抓取页面；scriptUrlFilters 为 null 时抓取全部脚本，空数组时不抓脚本，
      * 非空时仅抓取 URL 中包含任一筛选片段的脚本。
+     * 当遇到 Cloudflare / 安全验证挑战时，自动通过绑定的 ChallengeResolver 进行解算。
      */
     public FetchedSource fetch(String name, String pageUrl, String[] scriptUrlFilters) throws IOException {
         String canonicalPageUrl = canonicalizeKnownPageUrl(pageUrl);
-        String html = get(canonicalPageUrl, MAX_PAGE_BYTES);
-        if (isSecurityVerificationPage(html)) {
-            throw new IOException("站点要求浏览器安全验证；请复制链接并在浏览器中手动测试");
+        String html = null;
+        try {
+            html = get(canonicalPageUrl, MAX_PAGE_BYTES);
+        } catch (IOException e) {
+            if (challengeResolver != null) {
+                return challengeResolver.resolve(name, canonicalPageUrl, scriptUrlFilters);
+            }
+            throw e;
         }
+
+        if (isSecurityVerificationPage(html)) {
+            if (challengeResolver != null) {
+                return challengeResolver.resolve(name, canonicalPageUrl, scriptUrlFilters);
+            }
+            throw new IOException("站点要求浏览器安全验证（Cloudflare）；请使用内置过盾引擎或在浏览器中打开");
+        }
+
+        return fetchWithHtml(name, canonicalPageUrl, html, scriptUrlFilters);
+    }
+
+    /** 给定已解算/获取的页面 HTML，提取并抓取关联脚本。 */
+    public FetchedSource fetchWithHtml(String name, String canonicalPageUrl, String html,
+                                       String[] scriptUrlFilters) {
         List<String> scripts = SourceParser.findLinkedScriptUrls(canonicalPageUrl, html);
         List<String> texts = new ArrayList<>();
         int n = 0;
@@ -76,18 +151,23 @@ public final class SourceFetcher {
         return new FetchedSource(name, canonicalPageUrl, html, texts);
     }
 
-    /** 检测反自动化安全页；不尝试绕过挑战，提示用户改在浏览器完成验证。 */
-    static boolean isSecurityVerificationPage(String html) {
+    /** 检测反自动化/Cloudflare 安全验证页。 */
+    public static boolean isSecurityVerificationPage(String html) {
         if (html == null || html.isEmpty()) {
             return false;
         }
-        String lower = html.toLowerCase(java.util.Locale.ROOT);
+        String lower = html.toLowerCase(Locale.ROOT);
         return html.contains("正在进行安全验证")
                 || html.contains("验证您不是自动程序")
                 || lower.contains("security verification")
                 || lower.contains("verify you are human")
                 || lower.contains("checking your browser")
-                || lower.contains("challenge-platform");
+                || lower.contains("challenge-platform")
+                || lower.contains("cf-chl-widget")
+                || lower.contains("challenges.cloudflare.com")
+                || lower.contains("cf-turnstile")
+                || (lower.contains("just a moment") && lower.contains("cloudflare"))
+                || (lower.contains("attention required") && lower.contains("cloudflare"));
     }
 
     /** 修复已知移动端测试页的大小写/空格别名，避免把畸形路径发给站点。 */
@@ -98,11 +178,11 @@ public final class SourceFetcher {
         String trimmed = pageUrl.trim();
         try {
             // URI 不接受裸空格；编码后取 getPath() 会还原为可比较的路径。
-            java.net.URI uri = new java.net.URI(trimmed.replace(" ", "%20"));
+            URI uri = new URI(trimmed.replace(" ", "%20"));
             if ("mobileproxy.space".equalsIgnoreCase(uri.getHost())) {
                 String path = uri.getPath();
                 if (path != null) {
-                    String normalized = path.toLowerCase(java.util.Locale.ROOT)
+                    String normalized = path.toLowerCase(Locale.ROOT)
                             .replaceAll("[\\s_-]+", "");
                     if ("/ch/adblocktest.html".equals(normalized)) {
                         return "https://mobileproxy.space/ch/adblock-test.html";
@@ -124,19 +204,52 @@ public final class SourceFetcher {
         return false;
     }
 
-    private String get(String url, long maxBytes) throws IOException {
-        Request req = new Request.Builder()
+    private static String hostOf(String url) {
+        if (url == null) {
+            return "";
+        }
+        try {
+            URI u = new URI(url);
+            if (u.getHost() != null) {
+                return u.getHost().toLowerCase(Locale.ROOT);
+            }
+        } catch (Exception ignore) {
+            // fall through
+        }
+        return "";
+    }
+
+    public String get(String url, long maxBytes) throws IOException {
+        Request.Builder reqBuilder = new Request.Builder()
                 .url(url)
-                .header("User-Agent", "AdGuardRuleTester/1.0 (Android)")
-                .header("Accept", "text/html,application/javascript,*/*")
-                .get()
-                .build();
+                .header("User-Agent", userAgent)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,application/javascript,*/*;q=0.8")
+                .header("Accept-Language", "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7")
+                .header("Sec-CH-UA", "\"Chromium\";v=\"128\", \"Not;A=Brand\";v=\"24\", \"Google Chrome\";v=\"128\"")
+                .header("Sec-CH-UA-Mobile", "?1")
+                .header("Sec-CH-UA-Platform", "\"Android\"")
+                .header("Sec-Fetch-Dest", "document")
+                .header("Sec-Fetch-Mode", "navigate")
+                .header("Sec-Fetch-Site", "none")
+                .header("Sec-Fetch-User", "?1")
+                .header("Upgrade-Insecure-Requests", "1")
+                .get();
+
+        String host = hostOf(url);
+        if (!host.isEmpty()) {
+            String cookie = hostCookies.get(host);
+            if (cookie != null && !cookie.isEmpty()) {
+                reqBuilder.header("Cookie", cookie);
+            }
+        }
+
+        Request req = reqBuilder.build();
         try (Response resp = client.newCall(req).execute()) {
             ResponseBody body = resp.body();
             if (!resp.isSuccessful() || body == null) {
-                if (resp.code() == 403 || resp.code() == 429) {
+                if (resp.code() == 403 || resp.code() == 429 || resp.code() == 503) {
                     throw new IOException("HTTP " + resp.code()
-                            + "：安全验证/限流，请复制链接并在浏览器中手动测试");
+                            + "：Cloudflare 安全验证或限流，需要过盾处理");
                 }
                 throw new IOException("HTTP " + resp.code() + " for " + url);
             }
@@ -157,7 +270,7 @@ public final class SourceFetcher {
                     throw new IOException("response too large: " + url);
                 }
             }
-            return buf.readString(java.nio.charset.StandardCharsets.UTF_8);
+            return buf.readString(StandardCharsets.UTF_8);
         }
     }
 }

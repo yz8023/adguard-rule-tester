@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/bg_glass_card">
+
+    <TextView
+        android:id="@+id/tv_cf_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/cf_challenge_title"
+        android:textColor="@color/primary"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_cf_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/cf_challenge_message"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
+
+    <ProgressBar
+        android:id="@+id/pb_cf_loading"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:indeterminate="true" />
+
+    <FrameLayout
+        android:id="@+id/fl_webview_container"
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_input" />
+
+    <Button
+        android:id="@+id/btn_cf_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="10dp"
+        android:backgroundTint="@color/chip_surface"
+        android:text="@string/btn_cancel"
+        android:textColor="@color/primary" />
+</LinearLayout>
