@@ -15,6 +15,8 @@ public final class Sources {
     public static final String SRC4_URL = "https://superadblocktest.com/";
     public static final String SRC5_NAME = "GetBlockify";
     public static final String SRC5_URL = "https://getblockify.com/adblock-test";
+    public static final String SRC6_NAME = "AdBlock Tester";
+    public static final String SRC6_URL = "https://adblock-tester.com/";
 
     public static final String[] SRC1_SCRIPTS = {"/resources/adblock/data.js"};
     public static final String[] SRC3_SCRIPTS = {"/js/index.js"};

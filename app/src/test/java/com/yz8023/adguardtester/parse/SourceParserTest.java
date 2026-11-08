@@ -258,6 +258,56 @@ public class SourceParserTest {
     }
 
     @Test
+    public void parsesAdblockTesterComHtml() throws IOException {
+        String html = resource("adblock-tester-page-2026-10.html");
+        SourceParser.ParsedList parsed = SourceParser.parseSource(
+                "AdBlock Tester", "https://adblock-tester.com/", html, null);
+        assertNotNull(parsed);
+        Map<String, TestTarget> byHost = byHost(parsed.targets);
+        assertEquals(9, parsed.targets.size());
+
+        TestTarget ads = byHost.get("pagead2.googlesyndication.com");
+        assertNotNull(ads);
+        assertEquals("广告", ads.category);
+        assertEquals("Google AdSense", ads.vendor);
+
+        TestTarget yandexAd = byHost.get("an.yandex.ru");
+        assertNotNull(yandexAd);
+        assertEquals("广告", yandexAd.category);
+        assertEquals("Yandex Direct", yandexAd.vendor);
+
+        TestTarget ga = byHost.get("www.googletagmanager.com");
+        assertNotNull(ga);
+        assertEquals("分析", ga.category);
+        assertEquals("Google Analytics", ga.vendor);
+
+        TestTarget hotjar = byHost.get("static.hotjar.com");
+        assertNotNull(hotjar);
+        assertEquals("分析", hotjar.category);
+
+        TestTarget ym = byHost.get("mc.yandex.ru");
+        assertNotNull(ym);
+        assertEquals("分析", ym.category);
+
+        TestTarget sentry = byHost.get("js.sentry-cdn.com");
+        assertNotNull(sentry);
+        assertEquals("错误监控", sentry.category);
+        assertEquals("Sentry", sentry.vendor);
+
+        TestTarget bugsnag = byHost.get("d2wy8f7a9ursnm.cloudfront.net");
+        assertNotNull(bugsnag);
+        assertEquals("错误监控", bugsnag.category);
+        assertEquals("Bugsnag", bugsnag.vendor);
+
+        TestTarget custom = byHost.get("ymatuhin.ru");
+        assertNotNull(custom);
+        assertEquals("广告", custom.category);
+        assertEquals("Custom", custom.vendor);
+
+        assertFalse(byHost.containsKey("adblock-tester.com"));
+    }
+
+    @Test
     public void jsParserHandlesCommentsAndTrailingCommas() {
         String js = "const x = { /* c */ \"a\": [\"https://one.example.com/\", // line\n" +
                 " \"https://two.example.com\" ], };\n";

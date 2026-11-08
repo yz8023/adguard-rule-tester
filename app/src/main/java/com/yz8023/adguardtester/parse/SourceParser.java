@@ -72,6 +72,7 @@ public final class SourceParser {
         for (String t : texts) {
             boolean structured = scanStructured(t, sourceName, pageHost, merged);
             structured |= scanJsonParsedObjects(t, sourceName, pageHost, merged);
+            structured |= scanAdblockTester(t, sourceName, pageHost, merged);
             if (!structured) {
                 scanGeneric(t, sourceName, pageHost, merged);
             }
@@ -268,6 +269,106 @@ public final class SourceParser {
     }
 
     // ------------------------------------------------------------------
+    // 层 A.2：HTML 测试服务组件扫描（如 adblock-tester.com）
+    // ------------------------------------------------------------------
+
+    private static final Pattern ADBLOCK_TESTER_SECTION = Pattern.compile(
+            "<div\\b[^>]*\\bclass\\s*=\\s*[\"'][^\"']*\\bsection\\b[^\"']*[\"'][^>]*>(.*?)(?=<div\\b[^>]*\\bclass\\s*=\\s*[\"'][^\"']*\\bsection\\b|<h3\\b[^>]*\\bfinal-score\\b|<footer\\b|$)",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern ADBLOCK_TESTER_SERVICE = Pattern.compile(
+            "<div\\b[^>]*\\bclass\\s*=\\s*[\"'][^\"']*\\bservice\\b[^\"']*[\"'][^>]*>(.*?)(?=<div\\b[^>]*\\bclass\\s*=\\s*[\"'][^\"']*\\bservice\\b|$)",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern ADBLOCK_TESTER_H2 = Pattern.compile(
+            "<h2\\b[^>]*>(.*?)</h2>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern ADBLOCK_TESTER_H4 = Pattern.compile(
+            "<h4\\b[^>]*>(.*?)</h4>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern ADBLOCK_TESTER_TAG = Pattern.compile("<[^>]+>");
+    private static final Pattern SCRIPT_OR_MEDIA_TAG = Pattern.compile(
+            "<(?:script|img|object|embed)\\b[^>]*\\b(?:src|data)\\s*=\\s*[\"']([^\"']+)[\"']",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern INLINE_HOST_URL = Pattern.compile(
+            "(?:https?:)?//([a-zA-Z0-9.-]+\\.[a-z]{2,})(?:/[^\\s\"'<>\\(\\)\\[\\]{},;\\\\]*)?",
+            Pattern.CASE_INSENSITIVE);
+
+    private static boolean scanAdblockTester(String text, String sourceName, String pageHost,
+                                            Map<String, TestTarget> merged) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+        Matcher secMatcher = ADBLOCK_TESTER_SECTION.matcher(text);
+        boolean found = false;
+        while (secMatcher.find()) {
+            found = true;
+            String secContent = secMatcher.group(1);
+            Matcher h2M = ADBLOCK_TESTER_H2.matcher(secContent);
+            String secHeading = h2M.find() ? ADBLOCK_TESTER_TAG.matcher(h2M.group(1)).replaceAll("").trim() : "广告";
+            String category = canonicalCategory(secHeading, "广告");
+
+            Matcher srvMatcher = ADBLOCK_TESTER_SERVICE.matcher(secContent);
+            while (srvMatcher.find()) {
+                String srvContent = srvMatcher.group(1);
+                Matcher h4M = ADBLOCK_TESTER_H4.matcher(srvContent);
+                String vendor = h4M.find() ? ADBLOCK_TESTER_TAG.matcher(h4M.group(1)).replaceAll("").trim() : "";
+
+                Matcher uM = INLINE_HOST_URL.matcher(srvContent);
+                while (uM.find()) {
+                    String raw = uM.group(0);
+                    emit(raw, category, vendor, sourceName, pageHost, merged);
+                }
+            }
+        }
+        if (found) {
+            // 同时补充扫描页面 head/全局声明的外部测试脚本
+            Matcher tagM = SCRIPT_OR_MEDIA_TAG.matcher(text);
+            while (tagM.find()) {
+                String raw = tagM.group(1);
+                Matcher uM = INLINE_HOST_URL.matcher(raw);
+                if (uM.find()) {
+                    String host = uM.group(1).toLowerCase(Locale.ROOT);
+                    if (!isSelfHost(host, pageHost) && !DENY_HOSTS.contains(host)) {
+                        String cat = guessCategoryFromHost(host);
+                        String v = guessVendorFromHost(host);
+                        emit(raw, cat, v, sourceName, pageHost, merged);
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
+    private static String guessCategoryFromHost(String host) {
+        if (host.contains("sentry") || host.contains("bugsnag")) {
+            return "错误监控";
+        }
+        if (host.contains("google-analytics") || host.contains("googletagmanager") || host.contains("hotjar") || host.contains("metrika")) {
+            return "分析";
+        }
+        return "广告";
+    }
+
+    private static String guessVendorFromHost(String host) {
+        if (host.contains("sentry")) {
+            return "Sentry";
+        }
+        if (host.contains("bugsnag")) {
+            return "Bugsnag";
+        }
+        if (host.contains("hotjar")) {
+            return "Hotjar";
+        }
+        if (host.contains("googlesyndication")) {
+            return "Google Ads";
+        }
+        if (host.contains("googletagmanager") || host.contains("google-analytics")) {
+            return "Google Analytics";
+        }
+        if (host.contains("yandex")) {
+            return "Yandex";
+        }
+        return "";
+    }
+
+    // ------------------------------------------------------------------
     // 层 B：通用扫描（引号裸域名 + 根路径 URL）
     // ------------------------------------------------------------------
 
@@ -455,6 +556,9 @@ public final class SourceParser {
         if (s.isEmpty()) {
             return;
         }
+        if (s.startsWith("//")) {
+            s = "https:" + s;
+        }
         String scheme = "https";
         String host;
         if (s.regionMatches(true, 0, "http://", 0, 7) || s.regionMatches(true, 0, "https://", 0, 8)) {
@@ -611,6 +715,11 @@ public final class SourceParser {
             case "ad":
             case "advertising":
             case "adblock":
+            case "contextual":
+            case "contextualadvertising":
+            case "banner":
+            case "banners":
+            case "banneradvertising":
             case "display&bannerads":
             case "contextual&nativeads":
             case "programmaticads":
@@ -623,6 +732,10 @@ public final class SourceParser {
             case "analysis":
             case "statistics":
             case "stats":
+            case "analyticstools":
+            case "metric":
+            case "metrics":
+            case "metrica":
             case "analytics&invisibletrackers":
                 return "分析";
             case "tracking":
@@ -635,6 +748,8 @@ public final class SourceParser {
                 return "跟踪";
             case "errors":
             case "error":
+            case "errorcatchers":
+            case "errorcatcher":
             case "errortracker":
             case "errortrackers":
             case "errormonitoring":

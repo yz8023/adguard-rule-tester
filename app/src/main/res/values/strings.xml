@@ -9,6 +9,7 @@
     <string name="src3_label">Adblock Turtlecute（广告/分析/社交/OEM，开源）</string>
     <string name="src4_label">Super Adblock Test（约 470 个多类主机）</string>
     <string name="src5_label">GetBlockify（80+ 网络主机）</string>
+    <string name="src6_label">AdBlock Tester（主流广告/分析/横幅/错误监控基准）</string>
     <string name="src_custom_label">自定义测试页面</string>
     <string name="src_custom_hint">https://…（任意含测试域名列表的页面）</string>
     <string name="copy_link_short">复制链接</string>

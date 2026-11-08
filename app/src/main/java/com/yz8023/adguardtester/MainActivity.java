@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private CheckBox cbSrc3;
     private CheckBox cbSrc4;
     private CheckBox cbSrc5;
+    private CheckBox cbSrc6;
     private CheckBox cbSrcCustom;
     private EditText etUrl1;
     private EditText etUrl2;
@@ -114,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
         cbSrc3 = findViewById(R.id.cb_src3);
         cbSrc4 = findViewById(R.id.cb_src4);
         cbSrc5 = findViewById(R.id.cb_src5);
+        cbSrc6 = findViewById(R.id.cb_src6);
         cbSrcCustom = findViewById(R.id.cb_src_custom);
         TextView tvSourceUpdateNote = findViewById(R.id.tv_source_update_note);
         tvSourceUpdateNote.setText(getString(R.string.source_update_note, BuildConfig.VERSION_NAME));
@@ -161,6 +163,8 @@ public class MainActivity extends AppCompatActivity {
                 copyLink(R.string.source_link_copied, Sources.SRC4_URL));
         findViewById(R.id.btn_copy_src5).setOnClickListener(v ->
                 copyLink(R.string.source_link_copied, Sources.SRC5_URL));
+        findViewById(R.id.btn_copy_src6).setOnClickListener(v ->
+                copyLink(R.string.source_link_copied, Sources.SRC6_URL));
 
         adapter = new ResultAdapter(url -> copyLink(R.string.target_link_copied, url));
         rvResults.setLayoutManager(new LinearLayoutManager(this));
@@ -273,6 +277,9 @@ public class MainActivity extends AppCompatActivity {
         }
         if (cbSrc5.isChecked()) {
             sources.add(new Sources.Choice(Sources.SRC5_NAME, Sources.SRC5_URL, Sources.NO_SCRIPTS));
+        }
+        if (cbSrc6.isChecked()) {
+            sources.add(new Sources.Choice(Sources.SRC6_NAME, Sources.SRC6_URL, Sources.NO_SCRIPTS));
         }
         if (cbSrcCustom.isChecked()) {
             String url = etUrlCustom.getText().toString().trim();

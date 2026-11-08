@@ -119,6 +119,19 @@
 
         <LinearLayout style="@style/SourceRow">
             <CheckBox
+                android:id="@+id/cb_src6"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/src6_label" />
+            <TextView
+                android:id="@+id/btn_copy_src6"
+                style="@style/SourceLink"
+                android:text="@string/copy_link_short" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/SourceRow">
+            <CheckBox
                 android:id="@+id/cb_src_custom"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
